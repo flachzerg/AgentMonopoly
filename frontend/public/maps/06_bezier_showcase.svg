@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="900" viewBox="0 0 1300 900" role="img" aria-label="map-bezier_showcase">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+    <filter id="tileShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="1300" height="900" fill="url(#bgGradient)"/>
+  <rect x="10" y="10" width="1280" height="880" rx="16" ry="16" fill="none" stroke="#d6dbe7" stroke-width="2"/>
+  <g id="track-layer">
+    <path d="M 200.0 150.0 C 245.0 150.0 255.0 150.0 300.0 150.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 200.0 150.0 C 245.0 150.0 255.0 150.0 300.0 150.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 400.0 150.0 C 445.0 150.0 455.0 150.0 500.0 150.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 400.0 150.0 C 445.0 150.0 455.0 150.0 500.0 150.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 600.0 150.0 C 645.2 150.0 654.8 141.0 700.0 141.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 600.0 150.0 C 645.2 150.0 654.8 141.0 700.0 141.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 800.0 150.0 C 845.0 150.0 855.0 150.0 900.0 150.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 800.0 150.0 C 845.0 150.0 855.0 150.0 900.0 150.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 700.0 159.0 C 603.0 159.0 697.0 350.0 600.0 350.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 700.0 159.0 C 603.0 159.0 697.0 350.0 600.0 350.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1000.0 150.0 C 1045.0 150.0 1055.0 150.0 1100.0 150.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1000.0 150.0 C 1045.0 150.0 1055.0 150.0 1100.0 150.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1150.0 200.0 C 1150.0 245.0 1150.0 255.0 1150.0 300.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1150.0 200.0 C 1150.0 245.0 1150.0 255.0 1150.0 300.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1150.0 400.0 C 1150.0 445.0 1150.0 455.0 1150.0 500.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1150.0 400.0 C 1150.0 445.0 1150.0 455.0 1150.0 500.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1150.0 600.0 C 1150.0 645.0 1150.0 655.0 1150.0 700.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1150.0 600.0 C 1150.0 645.0 1150.0 655.0 1150.0 700.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1100.0 750.0 C 1055.0 750.0 1045.0 750.0 1000.0 750.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1100.0 750.0 C 1055.0 750.0 1045.0 750.0 1000.0 750.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 900.0 750.0 C 855.0 750.0 845.0 750.0 800.0 750.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 900.0 750.0 C 855.0 750.0 845.0 750.0 800.0 750.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 700.0 750.0 C 654.8 750.0 645.2 741.0 600.0 741.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 700.0 750.0 C 654.8 750.0 645.2 741.0 600.0 741.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 500.0 750.0 C 455.0 750.0 445.0 750.0 400.0 750.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 500.0 750.0 C 455.0 750.0 445.0 750.0 400.0 750.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 600.0 759.0 C 704.3 759.0 595.7 550.0 700.0 550.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 600.0 759.0 C 704.3 759.0 595.7 550.0 700.0 550.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 300.0 750.0 C 255.0 750.0 245.0 750.0 200.0 750.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 300.0 750.0 C 255.0 750.0 245.0 750.0 200.0 750.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 150.0 700.0 C 150.0 655.0 150.0 645.0 150.0 600.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 150.0 700.0 C 150.0 655.0 150.0 645.0 150.0 600.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 150.0 500.0 C 150.0 455.0 150.0 445.0 150.0 400.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 150.0 500.0 C 150.0 455.0 150.0 445.0 150.0 400.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 150.0 300.0 C 150.0 255.0 150.0 245.0 150.0 200.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 150.0 300.0 C 150.0 255.0 150.0 245.0 150.0 200.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 500.0 350.0 C 455.0 350.0 445.0 350.0 400.0 350.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 500.0 350.0 C 455.0 350.0 445.0 350.0 400.0 350.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 800.0 550.0 C 845.0 550.0 855.0 550.0 900.0 550.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 800.0 550.0 C 845.0 550.0 855.0 550.0 900.0 550.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 300.0 350.0 C 255.0 350.0 245.0 350.0 200.0 350.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 300.0 350.0 C 255.0 350.0 245.0 350.0 200.0 350.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+    <path d="M 1000.0 550.0 C 1045.0 550.0 1055.0 550.0 1100.0 550.0" fill="none" stroke="#dbeafe" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 1000.0 550.0 C 1045.0 550.0 1055.0 550.0 1100.0 550.0" fill="none" stroke="#60a5fa" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>
+  </g>
+  <g id="tile-T00" data-tile-id="T00" data-tile-index="0" data-owner-id="" data-token-slots="114.0,114.0;186.0,114.0;114.0,186.0;186.0,186.0">
+    <rect x="100.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#ffe8b5" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="150.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">START</text>
+    <text x="150.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Start</text>
+  </g>
+  <circle cx="114.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="114.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T01" data-tile-id="T01" data-tile-index="1" data-owner-id="" data-token-slots="314.0,114.0;386.0,114.0;314.0,186.0;386.0,186.0">
+    <rect x="300.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="350.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="350.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Alpha St</text>
+  </g>
+  <circle cx="314.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T02" data-tile-id="T02" data-tile-index="2" data-owner-id="" data-token-slots="514.0,114.0;586.0,114.0;514.0,186.0;586.0,186.0">
+    <rect x="500.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="550.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="550.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Beta Ave</text>
+  </g>
+  <circle cx="514.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="514.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T03" data-tile-id="T03" data-tile-index="3" data-owner-id="" data-token-slots="714.0,114.0;786.0,114.0;714.0,186.0;786.0,186.0">
+    <rect x="700.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="750.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="750.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Gamma Rd</text>
+  </g>
+  <circle cx="714.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="714.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T04" data-tile-id="T04" data-tile-index="4" data-owner-id="" data-token-slots="914.0,114.0;986.0,114.0;914.0,186.0;986.0,186.0">
+    <rect x="900.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="950.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="950.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Delta Way</text>
+  </g>
+  <circle cx="914.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="914.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T05" data-tile-id="T05" data-tile-index="5" data-owner-id="" data-token-slots="1114.0,114.0;1186.0,114.0;1114.0,186.0;1186.0,186.0">
+    <rect x="1100.0" y="100.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="1150.0" y="142.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="1150.0" y="162.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Epsilon St</text>
+  </g>
+  <circle cx="1114.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="114.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1114.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="186.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T06" data-tile-id="T06" data-tile-index="6" data-owner-id="" data-token-slots="1114.0,314.0;1186.0,314.0;1114.0,386.0;1186.0,386.0">
+    <rect x="1100.0" y="300.0" rx="10" ry="10" width="100.0" height="100.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="1150.0" y="342.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">EVENT</text>
+    <text x="1150.0" y="362.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Zeta Plaza</text>
+  </g>
+  <circle cx="1114.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1114.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T07" data-tile-id="T07" data-tile-index="7" data-owner-id="" data-token-slots="1114.0,514.0;1186.0,514.0;1114.0,586.0;1186.0,586.0">
+    <rect x="1100.0" y="500.0" rx="10" ry="10" width="100.0" height="100.0" fill="#ecf2f9" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="1150.0" y="542.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">EMPTY</text>
+    <text x="1150.0" y="562.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Eta Park</text>
+  </g>
+  <circle cx="1114.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1114.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T08" data-tile-id="T08" data-tile-index="8" data-owner-id="" data-token-slots="1114.0,714.0;1186.0,714.0;1114.0,786.0;1186.0,786.0">
+    <rect x="1100.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#cdf7df" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="1150.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">BANK</text>
+    <text x="1150.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Theta Bank</text>
+  </g>
+  <circle cx="1114.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1114.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="1186.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T09" data-tile-id="T09" data-tile-index="9" data-owner-id="" data-token-slots="914.0,714.0;986.0,714.0;914.0,786.0;986.0,786.0">
+    <rect x="900.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="950.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="950.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Iota Blvd</text>
+  </g>
+  <circle cx="914.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="914.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T10" data-tile-id="T10" data-tile-index="10" data-owner-id="" data-token-slots="714.0,714.0;786.0,714.0;714.0,786.0;786.0,786.0">
+    <rect x="700.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="750.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="750.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Kappa Ln</text>
+  </g>
+  <circle cx="714.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="714.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T11" data-tile-id="T11" data-tile-index="11" data-owner-id="" data-token-slots="514.0,714.0;586.0,714.0;514.0,786.0;586.0,786.0">
+    <rect x="500.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="550.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="550.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Lambda Dr</text>
+  </g>
+  <circle cx="514.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="514.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T12" data-tile-id="T12" data-tile-index="12" data-owner-id="" data-token-slots="314.0,714.0;386.0,714.0;314.0,786.0;386.0,786.0">
+    <rect x="300.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="350.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="350.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Mu Court</text>
+  </g>
+  <circle cx="314.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T13" data-tile-id="T13" data-tile-index="13" data-owner-id="" data-token-slots="114.0,714.0;186.0,714.0;114.0,786.0;186.0,786.0">
+    <rect x="100.0" y="700.0" rx="10" ry="10" width="100.0" height="100.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="150.0" y="742.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">EVENT</text>
+    <text x="150.0" y="762.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Nu Square</text>
+  </g>
+  <circle cx="114.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="714.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="114.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="786.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T14" data-tile-id="T14" data-tile-index="14" data-owner-id="" data-token-slots="114.0,514.0;186.0,514.0;114.0,586.0;186.0,586.0">
+    <rect x="100.0" y="500.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="150.0" y="542.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="150.0" y="562.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Xi Circle</text>
+  </g>
+  <circle cx="114.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="114.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T15" data-tile-id="T15" data-tile-index="15" data-owner-id="" data-token-slots="114.0,314.0;186.0,314.0;114.0,386.0;186.0,386.0">
+    <rect x="100.0" y="300.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="150.0" y="342.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="150.0" y="362.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Omicron St</text>
+  </g>
+  <circle cx="114.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="114.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="186.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-C01" data-tile-id="C01" data-tile-index="16" data-owner-id="" data-token-slots="514.0,314.0;586.0,314.0;514.0,386.0;586.0,386.0">
+    <rect x="500.0" y="300.0" rx="10" ry="10" width="100.0" height="100.0" fill="#cdf7df" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="550.0" y="342.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">BANK</text>
+    <text x="550.0" y="362.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Sweep Hub</text>
+  </g>
+  <circle cx="514.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="514.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="586.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-C02" data-tile-id="C02" data-tile-index="17" data-owner-id="" data-token-slots="714.0,514.0;786.0,514.0;714.0,586.0;786.0,586.0">
+    <rect x="700.0" y="500.0" rx="10" ry="10" width="100.0" height="100.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="750.0" y="542.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">EVENT</text>
+    <text x="750.0" y="562.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Arc Node</text>
+  </g>
+  <circle cx="714.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="714.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="786.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-C03" data-tile-id="C03" data-tile-index="18" data-owner-id="" data-token-slots="314.0,314.0;386.0,314.0;314.0,386.0;386.0,386.0">
+    <rect x="300.0" y="300.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="350.0" y="342.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="350.0" y="362.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Merge West</text>
+  </g>
+  <circle cx="314.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="314.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="386.0" cy="386.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-C04" data-tile-id="C04" data-tile-index="19" data-owner-id="" data-token-slots="914.0,514.0;986.0,514.0;914.0,586.0;986.0,586.0">
+    <rect x="900.0" y="500.0" rx="10" ry="10" width="100.0" height="100.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="950.0" y="542.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial" font-weight="bold">PROPERTY</text>
+    <text x="950.0" y="562.0" text-anchor="middle" fill="#111827" font-size="15" font-family="Segoe UI, Arial">Merge East</text>
+  </g>
+  <circle cx="914.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="514.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="914.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="986.0" cy="586.0" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+</svg>

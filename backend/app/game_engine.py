@@ -34,6 +34,7 @@ VALID_ACTIONS = {
     "propose_alliance",
     "accept_alliance",
     "reject_alliance",
+    "set_route_preference",
     "pass",
 }
 
@@ -47,6 +48,8 @@ class Player:
     cash: int = 2000
     deposit: int = 500
     position: int = 0
+    current_tile_id: str | None = None
+    route_preference_tile_id: str | None = None
     property_ids: list[str] = field(default_factory=list)
     alliance_with: str | None = None
     alive: bool = True
@@ -64,6 +67,7 @@ class Tile:
     toll: int | None = None
     event_key: str | None = None
     quiz_key: str | None = None
+    next_tile_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -79,6 +83,7 @@ class GameSession:
     current_player_index: int = 0
     current_phase: str = "ROLL"
     active_tile_index: int = 0
+    active_tile_id: str = ""
     events: list[EventRecord] = field(default_factory=list)
     replay_steps: list[ReplayStep] = field(default_factory=list)
     allowed_actions: list[ActionOption] = field(default_factory=list)
@@ -110,6 +115,13 @@ class GameManager:
             ],
             board=build_default_board(),
         )
+        if session.board:
+            start_tile_id = self._start_tile_id(session)
+            for item in session.players:
+                item.current_tile_id = start_tile_id
+                item.position = self._tile_index_by_id(session, start_tile_id)
+            session.active_tile_id = start_tile_id
+            session.active_tile_index = self._tile_index_by_id(session, start_tile_id)
         session.allowed_actions = self._allowed_actions(session)
         self._games[game_id] = session
         self._append_event(
@@ -186,7 +198,7 @@ class GameManager:
         merged_args = option.default_args | args
         event = self._execute_action(session, current_player, action, merged_args)
 
-        if session.current_phase == "DECISION" and action != "roll_dice":
+        if session.current_phase == "DECISION" and action not in {"roll_dice", "set_route_preference"}:
             self._finalize_turn(session, decision_audit)
 
         return True, "action accepted", event
@@ -201,8 +213,9 @@ class GameManager:
 
     def build_tile_context(self, session: GameSession) -> TileContext:
         current_player = session.players[session.current_player_index]
-        tile = session.board[session.active_tile_index]
+        tile = self._active_tile(session, current_player)
         subtype = resolve_tile_subtype(tile, current_player)
+        next_tile_ids = self._next_tile_ids(session, tile)
         return TileContext(
             tile_id=tile.tile_id,
             tile_index=tile.tile_index,
@@ -213,6 +226,8 @@ class GameManager:
             toll=tile.toll,
             event_key=tile.event_key,
             quiz_key=tile.quiz_key,
+            next_tile_ids=next_tile_ids,
+            branch_options=next_tile_ids if len(next_tile_ids) > 1 else [],
         )
 
     def build_turn_meta(self, session: GameSession) -> TurnMeta:
@@ -239,6 +254,7 @@ class GameManager:
                 owner_id=item.owner_id,
                 property_price=item.property_price,
                 toll=item.toll,
+                next_tile_ids=self._next_tile_ids(session, item),
             )
             for item in session.board
         ]
@@ -280,7 +296,9 @@ class GameManager:
         session.turn_index += 1
         session.current_phase = "ROLL"
         current_player = session.players[session.current_player_index]
-        session.active_tile_index = current_player.position
+        active_tile = self._player_tile(session, current_player)
+        session.active_tile_id = active_tile.tile_id
+        session.active_tile_index = active_tile.tile_index
         session.allowed_actions = self._allowed_actions(session)
 
     def _advance_to_next_alive_player(self, session: GameSession) -> None:
@@ -394,7 +412,7 @@ class GameManager:
             )
 
         if action == "event_choice":
-            tile = session.board[session.active_tile_index]
+            tile = self._active_tile(session, player)
             if tile.tile_type != "EVENT":
                 return self._append_event(
                     session,
@@ -416,6 +434,20 @@ class GameManager:
                     "choice": choice,
                     "delta": delta,
                     "cash": player.cash,
+                },
+            )
+
+        if action == "set_route_preference":
+            target_tile_id = str(args["target_tile_id"])
+            player.route_preference_tile_id = target_tile_id
+            session.allowed_actions = self._allowed_actions(session)
+            return self._append_event(
+                session,
+                "action.accepted",
+                {
+                    "player_id": player.player_id,
+                    "action": action,
+                    "target_tile_id": target_tile_id,
                 },
             )
 
@@ -479,12 +511,30 @@ class GameManager:
     def _roll_and_settle(self, session: GameSession, player: Player) -> EventRecord:
         session.current_phase = "TILE_ENTER"
         dice = session.rng.randint(1, 6)
-        old_position = player.position
-        player.position = (player.position + dice) % len(session.board)
-        passed_start = player.position < old_position
-        if passed_start:
-            player.cash += 200
-        session.active_tile_index = player.position
+        start_tile_id = self._start_tile_id(session)
+        current_tile = self._player_tile(session, player)
+        current_tile_id = current_tile.tile_id
+        movement_trace = [current_tile_id]
+        passed_start_count = 0
+
+        for _ in range(dice):
+            tile = self._find_tile(session, current_tile_id)
+            next_candidates = self._next_tile_ids(session, tile)
+            if not next_candidates:
+                break
+            chosen_tile_id = self._choose_next_tile(player, next_candidates)
+            if chosen_tile_id == start_tile_id:
+                passed_start_count += 1
+            current_tile_id = chosen_tile_id
+            movement_trace.append(current_tile_id)
+
+        if passed_start_count > 0:
+            player.cash += 200 * passed_start_count
+        player.current_tile_id = current_tile_id
+        arrived_tile = self._find_tile(session, current_tile_id)
+        player.position = arrived_tile.tile_index
+        session.active_tile_id = arrived_tile.tile_id
+        session.active_tile_index = arrived_tile.tile_index
         self._append_event(
             session,
             "dice.rolled",
@@ -492,12 +542,14 @@ class GameManager:
                 "player_id": player.player_id,
                 "dice": dice,
                 "position": player.position,
-                "passed_start": passed_start,
+                "current_tile_id": player.current_tile_id,
+                "movement_trace": movement_trace,
+                "passed_start": passed_start_count > 0,
+                "passed_start_count": passed_start_count,
             },
         )
         session.current_phase = "AUTO_SETTLE"
-        tile = session.board[player.position]
-        settle_event = self._auto_settle(session, player, tile)
+        settle_event = self._auto_settle(session, player, arrived_tile)
         session.current_phase = "DECISION"
         session.allowed_actions = self._allowed_actions(session)
         return settle_event
@@ -664,7 +716,7 @@ class GameManager:
         if session.current_phase != "DECISION":
             return [ActionOption(action="pass", description="Pass", required_args=[])]
 
-        tile = session.board[session.active_tile_index]
+        tile = self._active_tile(session, player)
         subtype = resolve_tile_subtype(tile, player)
         options: list[ActionOption] = []
 
@@ -723,6 +775,19 @@ class GameManager:
                     required_args=["choice"],
                     allowed_values={"choice": ["safe", "risky"]},
                     default_args={"choice": "safe"},
+                )
+            )
+
+        branch_targets = self._branch_targets_within_steps(session, player, lookahead=6)
+        branch_targets = [item for item in branch_targets if item != player.route_preference_tile_id]
+        if branch_targets:
+            options.append(
+                ActionOption(
+                    action="set_route_preference",
+                    description="Set route preference for nearby branch",
+                    required_args=["target_tile_id"],
+                    allowed_values={"target_tile_id": branch_targets},
+                    default_args={"target_tile_id": branch_targets[0]},
                 )
             )
 
@@ -792,6 +857,7 @@ class GameManager:
                 owner_id=item.owner_id,
                 property_price=item.property_price,
                 toll=item.toll,
+                next_tile_ids=self._next_tile_ids(session, item),
             )
             for item in session.board
         ]
@@ -804,7 +870,7 @@ class GameManager:
             max_rounds=session.max_rounds,
             current_player_id=current_player.player_id,
             current_phase=session.current_phase,
-            active_tile_id=session.board[session.active_tile_index].tile_id,
+            active_tile_id=session.active_tile_id or self._player_tile(session, current_player).tile_id,
             players=players,
             board=board,
             allowed_actions=session.allowed_actions,
@@ -824,10 +890,75 @@ class GameManager:
             deposit=player.deposit,
             net_worth=player.cash + player.deposit + property_value,
             position=player.position,
+            current_tile_id=player.current_tile_id,
+            route_preference_tile_id=player.route_preference_tile_id,
             property_ids=list(player.property_ids),
             alliance_with=player.alliance_with,
             alive=player.alive,
         )
+
+    def _active_tile(self, session: GameSession, player: Player) -> Tile:
+        if session.active_tile_id:
+            return self._find_tile(session, session.active_tile_id)
+        return self._player_tile(session, player)
+
+    def _player_tile(self, session: GameSession, player: Player) -> Tile:
+        if player.current_tile_id:
+            return self._find_tile(session, player.current_tile_id)
+        index = max(0, min(player.position, len(session.board) - 1))
+        tile = session.board[index]
+        player.current_tile_id = tile.tile_id
+        player.position = tile.tile_index
+        return tile
+
+    def _tile_index_by_id(self, session: GameSession, tile_id: str) -> int:
+        return self._find_tile(session, tile_id).tile_index
+
+    def _start_tile_id(self, session: GameSession) -> str:
+        for item in session.board:
+            if item.tile_type == "START":
+                return item.tile_id
+        return session.board[0].tile_id
+
+    def _next_tile_ids(self, session: GameSession, tile: Tile) -> list[str]:
+        if tile.next_tile_ids:
+            return [item for item in tile.next_tile_ids if any(t.tile_id == item for t in session.board)]
+        ordered = sorted(session.board, key=lambda item: item.tile_index)
+        index = next((idx for idx, item in enumerate(ordered) if item.tile_id == tile.tile_id), 0)
+        next_index = (index + 1) % len(ordered)
+        return [ordered[next_index].tile_id]
+
+    def _choose_next_tile(self, player: Player, candidates: list[str]) -> str:
+        if player.route_preference_tile_id and player.route_preference_tile_id in candidates:
+            return player.route_preference_tile_id
+        return candidates[0]
+
+    def _branch_targets_within_steps(self, session: GameSession, player: Player, lookahead: int = 6) -> list[str]:
+        if lookahead <= 0:
+            return []
+        start_tile = self._player_tile(session, player)
+        queue: list[tuple[str, int]] = [(start_tile.tile_id, 0)]
+        best_depth: dict[str, int] = {start_tile.tile_id: 0}
+        targets: set[str] = set()
+
+        while queue:
+            tile_id, depth = queue.pop(0)
+            if depth >= lookahead:
+                continue
+            tile = self._find_tile(session, tile_id)
+            next_ids = self._next_tile_ids(session, tile)
+            if len(next_ids) > 1:
+                targets.update(next_ids)
+            for next_id in next_ids:
+                next_depth = depth + 1
+                if next_depth > lookahead:
+                    continue
+                previous = best_depth.get(next_id)
+                if previous is not None and previous <= next_depth:
+                    continue
+                best_depth[next_id] = next_depth
+                queue.append((next_id, next_depth))
+        return sorted(targets)
 
     def _find_player(self, session: GameSession, player_id: str) -> Player:
         for item in session.players:
@@ -912,6 +1043,7 @@ def build_default_board() -> list[Tile]:
                 toll=item.get("toll"),
                 event_key=item.get("event_key"),
                 quiz_key=item.get("quiz_key"),
+                next_tile_ids=list(item.get("next_tile_ids") or []),
             )
             for item in rows
         ]
@@ -920,7 +1052,7 @@ def build_default_board() -> list[Tile]:
 
 
 def _fallback_default_board() -> list[Tile]:
-    return [
+    board = [
         Tile("T00", 0, "START", "START", "Start"),
         Tile("T01", 1, "PROPERTY", "PROPERTY", "Hill Road", property_price=200, toll=40),
         Tile("T02", 2, "EMPTY", "EMPTY", "Open Park"),
@@ -938,3 +1070,6 @@ def _fallback_default_board() -> list[Tile]:
         Tile("T14", 14, "EVENT", "EVENT", "Lucky Lane", event_key="EVT_RANDOM"),
         Tile("T15", 15, "BANK", "BANK", "Reserve Bank"),
     ]
+    for index, tile in enumerate(board):
+        tile.next_tile_ids = [board[(index + 1) % len(board)].tile_id]
+    return board

@@ -128,7 +128,11 @@ class HeuristicDecisionModel:
             action_name = item["action"]
             candidate_actions.append(action_name)
 
-        if tile_context.get("tile_subtype") == "PROPERTY_UNOWNED":
+        route_pref = next((item for item in options if item["action"] == "set_route_preference"), None)
+        if route_pref and player.get("route_preference_tile_id") is None:
+            selected_action = "set_route_preference"
+            args = route_pref.get("default_args", {})
+        elif tile_context.get("tile_subtype") == "PROPERTY_UNOWNED":
             buy = next((item for item in options if item["action"] == "buy_property"), None)
             liquidity_floor = 250 if aggressive else 400
             if buy and player.get("cash", 0) >= int(tile_context.get("property_price") or 0) + liquidity_floor:

@@ -1,0 +1,544 @@
+{
+  "meta": {
+    "map_id": "loop24",
+    "track_length": 24,
+    "theme": "city-loop-large",
+    "version": "1.0.0",
+    "topology": "loop",
+    "start_tile_id": "T00",
+    "canvas": {
+      "width": 1340,
+      "height": 1020
+    }
+  },
+  "tiles": [
+    {
+      "tile_id": "T00",
+      "tile_index": 0,
+      "name": "Start",
+      "tile_type": "START",
+      "tile_subtype": "START",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T01"
+      ],
+      "render": {
+        "x": 60,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T01",
+      "tile_index": 1,
+      "name": "Elm St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 110,
+      "toll": 22,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T02"
+      ],
+      "render": {
+        "x": 220,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T02",
+      "tile_index": 2,
+      "name": "Oak St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 120,
+      "toll": 24,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T03"
+      ],
+      "render": {
+        "x": 380,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T03",
+      "tile_index": 3,
+      "name": "Lucky",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_SMALL",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T04"
+      ],
+      "render": {
+        "x": 540,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T04",
+      "tile_index": 4,
+      "name": "Maple St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 140,
+      "toll": 28,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T05"
+      ],
+      "render": {
+        "x": 700,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T05",
+      "tile_index": 5,
+      "name": "Pine St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 150,
+      "toll": 30,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T06"
+      ],
+      "render": {
+        "x": 860,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T06",
+      "tile_index": 6,
+      "name": "City Bank",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T07"
+      ],
+      "render": {
+        "x": 1020,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T07",
+      "tile_index": 7,
+      "name": "Cedar St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 170,
+      "toll": 34,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T08"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 60,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T08",
+      "tile_index": 8,
+      "name": "Transit",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T09"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 220,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T09",
+      "tile_index": 9,
+      "name": "Ash St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 190,
+      "toll": 38,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T10"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 380,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T10",
+      "tile_index": 10,
+      "name": "Birch St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 200,
+      "toll": 40,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T11"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 540,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T11",
+      "tile_index": 11,
+      "name": "Chance",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_SMALL",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T12"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 700,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T12",
+      "tile_index": 12,
+      "name": "Cherry St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 220,
+      "toll": 44,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T13"
+      ],
+      "render": {
+        "x": 1180,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T13",
+      "tile_index": 13,
+      "name": "Walnut St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 230,
+      "toll": 46,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T14"
+      ],
+      "render": {
+        "x": 1020,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T14",
+      "tile_index": 14,
+      "name": "Union Bank",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T15"
+      ],
+      "render": {
+        "x": 860,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T15",
+      "tile_index": 15,
+      "name": "Spruce St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 250,
+      "toll": 50,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T16"
+      ],
+      "render": {
+        "x": 700,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T16",
+      "tile_index": 16,
+      "name": "Willow St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 260,
+      "toll": 52,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T17"
+      ],
+      "render": {
+        "x": 540,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T17",
+      "tile_index": 17,
+      "name": "Mystery",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_SMALL",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T18"
+      ],
+      "render": {
+        "x": 380,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T18",
+      "tile_index": 18,
+      "name": "Chestnut",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 280,
+      "toll": 56,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T19"
+      ],
+      "render": {
+        "x": 220,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T19",
+      "tile_index": 19,
+      "name": "Park",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T20"
+      ],
+      "render": {
+        "x": 60,
+        "y": 860,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T20",
+      "tile_index": 20,
+      "name": "Poplar St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 300,
+      "toll": 60,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T21"
+      ],
+      "render": {
+        "x": 60,
+        "y": 700,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T21",
+      "tile_index": 21,
+      "name": "Trust Bank",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T22"
+      ],
+      "render": {
+        "x": 60,
+        "y": 540,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T22",
+      "tile_index": 22,
+      "name": "Fir St",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 320,
+      "toll": 64,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T23"
+      ],
+      "render": {
+        "x": 60,
+        "y": 380,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T23",
+      "tile_index": 23,
+      "name": "Sycamore",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 330,
+      "toll": 66,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T00"
+      ],
+      "render": {
+        "x": 60,
+        "y": 220,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    }
+  ]
+}

@@ -15,8 +15,10 @@
 - 支持 AI 单步决策与自动推进
 - 已支持 Agent `thought` 伪流式输出（方式 A）：模型先返回完整 JSON，再通过 WebSocket 分片广播 thought
 - 对局页已接入 Agent 思维群聊视图：不同 Agent 固定头像 + 聊天气泡流式展示
-- 地图生成引擎已完成基础能力：`JSON 配置 -> SVG 生成 -> 运行时加载与回退`
-- 当前地图视觉处于工程可用阶段，已具备连线与棋子落点槽位；后续会继续纳入前端美化迭代
+- 地图生成引擎与数据结构已完成“分支地图”改造：
+  - 数据模型：支持通过 `next_tile_ids` 定义任意有向图，兼容原有单环运行逻辑，新增前方分支路径预测。
+  - 视觉升级：自适应等分点贝塞尔（Cubic Bezier）平滑连线，正方形 100x100 地块完美居中文字，拥有者状态颜色区分，棋子四角分布。
+  - 多样化内置地图：包含大单环、多分支、复杂交叉网络以及专为展示对称曲线之美设计的 `bezier_showcase` 地图。
 
 ## 技术栈
 
@@ -210,7 +212,8 @@ A:
 - 产品需求：[docs/PRD_OpenPlay_v2.md](docs/PRD_OpenPlay_v2.md)
 - 开发路线：[docs/Roadmap_OpenPlay_v2.md](docs/Roadmap_OpenPlay_v2.md)
 - 代码脉络：[docs/MVP_开发配置与代码脉络.md](docs/MVP_开发配置与代码脉络.md)
-- 文件路径地图（AI 快速开发）：[docs/项目文件路径地图_AI快速开发.md](docs/项目文件路径地图_AI快速开发.md)
+- 分支地图改造设计方案：[docs/分支地图改造设计方案.md](docs/分支地图改造设计方案.md)
+- 地图生成与视觉设计经验：[docs/地图生成与视觉设计经验沉淀.md](docs/地图生成与视觉设计经验沉淀.md)
 - Agent 输入输出协议：[docs/Agent输入输出协议.md](docs/Agent输入输出协议.md)
 - Thought 伪流式方案：[docs/Thought伪流式实现方案.md](docs/Thought伪流式实现方案.md)
 

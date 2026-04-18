@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 ALLOWED_TILE_TYPES = {"START", "PROPERTY", "EMPTY", "BANK", "EVENT", "QUIZ"}
-DEFAULT_MAP_PATH = Path(__file__).resolve().parents[1] / "config" / "maps" / "board.default.json"
+DEFAULT_MAP_PATH = Path(__file__).resolve().parents[1] / "config" / "maps" / "board.01_basic_loop.json"
 
 
 def default_map_path() -> Path:
@@ -71,6 +71,30 @@ def validate_map_definition(payload: dict[str, Any]) -> None:
     if sorted(indices) != expected:
         raise ValueError("tile_index must be continuous from 0 to track_length - 1")
 
+    tile_id_set = set(tile_ids)
+    start_tile_id = meta.get("start_tile_id")
+    if start_tile_id is not None:
+        if not isinstance(start_tile_id, str) or not start_tile_id:
+            raise ValueError("map.meta.start_tile_id must be non-empty string when provided")
+        if start_tile_id not in tile_id_set:
+            raise ValueError(f"map.meta.start_tile_id not found in tiles: {start_tile_id}")
+
+    for index, tile in enumerate(tiles):
+        next_tile_ids = tile.get("next_tile_ids")
+        if next_tile_ids is None:
+            continue
+        if not isinstance(next_tile_ids, list) or not next_tile_ids:
+            raise ValueError(f"map.tiles[{index}].next_tile_ids must be non-empty list when provided")
+        seen_next: set[str] = set()
+        for next_tile_id in next_tile_ids:
+            if not isinstance(next_tile_id, str) or not next_tile_id:
+                raise ValueError(f"map.tiles[{index}].next_tile_ids contains invalid tile id")
+            if next_tile_id in seen_next:
+                raise ValueError(f"map.tiles[{index}].next_tile_ids contains duplicate: {next_tile_id}")
+            if next_tile_id not in tile_id_set:
+                raise ValueError(f"map.tiles[{index}].next_tile_ids references unknown tile: {next_tile_id}")
+            seen_next.add(next_tile_id)
+
 
 def load_runtime_board(path: Path | None = None) -> list[dict[str, Any]]:
     payload = load_map_definition(path)
@@ -87,6 +111,7 @@ def load_runtime_board(path: Path | None = None) -> list[dict[str, Any]]:
                 "toll": tile.get("toll"),
                 "event_key": tile.get("event_key"),
                 "quiz_key": tile.get("quiz_key"),
+                "next_tile_ids": tile.get("next_tile_ids"),
             }
         )
     return rows

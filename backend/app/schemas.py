@@ -46,6 +46,7 @@ class ActionType(str, Enum):
     PROPOSE_ALLIANCE = "propose_alliance"
     ACCEPT_ALLIANCE = "accept_alliance"
     REJECT_ALLIANCE = "reject_alliance"
+    SET_ROUTE_PREFERENCE = "set_route_preference"
     PASS = "pass"
 
 
@@ -75,6 +76,8 @@ class PlayerSnapshot(BaseModel):
     property_ids: list[str] = Field(default_factory=list)
     alliance_with: str | None = None
     position: int = 0
+    current_tile_id: str | None = None
+    route_preference_tile_id: str | None = None
     cash: int = 1000
     deposit: int = 0
     alive: bool = True
@@ -112,6 +115,8 @@ class TileContext(StrictModel):
     toll: int | None = None
     event_key: str | None = None
     quiz_key: str | None = None
+    next_tile_ids: list[str] = Field(default_factory=list)
+    branch_options: list[str] = Field(default_factory=list)
 
 
 class BoardTileSnapshot(StrictModel):
@@ -122,10 +127,13 @@ class BoardTileSnapshot(StrictModel):
     owner_id: str | None = None
     property_price: int | None = None
     toll: int | None = None
+    next_tile_ids: list[str] = Field(default_factory=list)
 
 
 class BoardSnapshot(StrictModel):
     track_length: int
+    topology: Literal["loop", "graph"] = "loop"
+    start_tile_id: str | None = None
     tiles: list[BoardTileSnapshot]
 
 
@@ -213,6 +221,7 @@ class TileState(StrictModel):
     owner_id: str | None = None
     property_price: int | None = None
     toll: int | None = None
+    next_tile_ids: list[str] = Field(default_factory=list)
 
 
 class GameState(StrictModel):
