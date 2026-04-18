@@ -112,6 +112,14 @@ export type ReplaySummary = {
   markdown: string;
 };
 
+export type AutoPlayResponse = {
+  game_id: string;
+  steps: number;
+  stopped_reason: string;
+  state: GameState;
+  audits: DecisionAudit[];
+};
+
 export type WsStateSyncPayload = {
   type: string;
   state?: GameState;
@@ -122,11 +130,32 @@ export type WsStateSyncPayload = {
 
 export type CreateGameRequest = {
   game_id: string;
+  room_name?: string;
   players: Array<{
     player_id: string;
     name: string;
     is_agent: boolean;
+    agent_config?: {
+      provider?: string;
+      model: string;
+      base_url?: string;
+      api_key?: string;
+      timeout_sec?: number;
+      max_retries?: number;
+    } | null;
   }>;
   max_rounds: number;
   seed: number;
+};
+
+export type CreateGameResponse = {
+  game_id: string;
+  state: GameState;
+};
+
+export type AgentOptions = {
+  provider: string;
+  base_url: string;
+  models_checked_at: string;
+  model_options: string[];
 };

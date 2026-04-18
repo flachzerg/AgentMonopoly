@@ -50,8 +50,9 @@ Hackathon/
 - `backend/app/api/health.py`
   - 健康检查接口：`GET /health`。
 - `backend/app/api/games.py`
-  - 动作提交接口：`POST /games/action`。
-  - Agent 决策示例接口：`GET /games/{game_id}/agent/{player_id}`。
+  - 动作提交接口：`POST /games/{game_id}/actions`。
+  - Agent 决策接口：`POST /games/{game_id}/agent/{player_id}/act`。
+  - AI 自动推进接口：`POST /games/{game_id}/auto-play`。
 - `backend/app/schemas.py`
   - 请求/响应模型定义（Pydantic）。
 - `backend/app/game_engine.py`
@@ -128,7 +129,7 @@ npm run dev
 - 打开前端页面（默认 `http://localhost:5173`），应看到 MVP 面板和日志区。
 
 ## 7. 下一步开发顺序（建议）
-- 第一步：前端接通 `POST /games/action`，完成真实动作提交。
+- 第一步：前端接通 `POST /games/{game_id}/actions`，完成真实动作提交。
 - 第二步：后端加入 WebSocket 房间广播（回合事件推送）。
 - 第三步：补 `SQLite` 持久化（玩家、地块、游戏快照、事件日志）。
 - 第四步：将 `agent_runtime.py` 从 fallback 升级为 `PydanticAI` 实际调用。

@@ -11,6 +11,7 @@ frontend/dist/
 .env.*
 backend/.env
 frontend/.env
+backend/config/openrouter_agent_config.local.json
 
 # Python cache / tooling
 .pytest_cache/

@@ -4,6 +4,7 @@ import { gamesApi } from "../services/api";
 import { GameWsClient, type WsStatus } from "../services/ws";
 import { jumpReplayIndex, stepReplayIndex } from "./replayPlayer";
 import type {
+  CreateGameRequest,
   DecisionAudit,
   EventRecord,
   GameState,
@@ -12,14 +13,24 @@ import type {
   WsStateSyncPayload,
 } from "../types/game";
 
+type AgentStreamEntry = {
+  ts: string;
+  modelTag: string;
+  action: string;
+  status: "ok" | "fallback";
+  summary: string;
+};
+
 type GameStore = {
   gameId: string;
+  roomName: string;
   state: GameState | null;
   timeline: EventRecord[];
   replay: ReplayResponse | null;
   replayIndex: number;
   summary: ReplaySummary | null;
   activeAudit: DecisionAudit | null;
+  agentStream: AgentStreamEntry[];
   wsStatus: WsStatus;
   wsRetryCount: number;
   isBusy: boolean;
@@ -27,13 +38,15 @@ type GameStore = {
   wsClient: GameWsClient | null;
   availableGames: string[];
   setGameId: (gameId: string) => void;
+  setRoomName: (roomName: string) => void;
   refreshGameList: () => Promise<void>;
-  createAndLoadGame: (maxRounds: number, seed: number) => Promise<void>;
+  createAndLoadGame: (payload: CreateGameRequest) => Promise<string | null>;
   loadState: () => Promise<void>;
   connectWs: () => void;
   disconnectWs: () => void;
   submitAction: (action: string, args: Record<string, unknown>) => Promise<void>;
   triggerAgent: () => Promise<void>;
+  autoPlayAgents: (maxSteps?: number) => Promise<void>;
   loadReplay: () => Promise<void>;
   loadSummary: () => Promise<void>;
   stepReplay: (direction: "prev" | "next") => void;
@@ -41,34 +54,53 @@ type GameStore = {
   exportSummary: (format: "json" | "markdown") => string;
 };
 
-const DEFAULT_PLAYERS = [
-  { player_id: "p1", name: "玩家A", is_agent: false },
-  { player_id: "p2", name: "Agent-B", is_agent: true },
-  { player_id: "p3", name: "Agent-C", is_agent: true },
-  { player_id: "p4", name: "Agent-D", is_agent: true },
-];
-
 const MAX_TIMELINE_SIZE = 250;
+const MAX_AGENT_STREAM = 80;
 
-function appendTimeline(
-  current: EventRecord[],
-  incoming: EventRecord[]
-): EventRecord[] {
-  const merged = [...current, ...incoming];
+function appendTimeline(current: EventRecord[], incoming: EventRecord[]): EventRecord[] {
+  const seen = new Set(current.map((item) => item.event_id));
+  const merged = [...current];
+  for (const item of incoming) {
+    if (seen.has(item.event_id)) {
+      continue;
+    }
+    seen.add(item.event_id);
+    merged.push(item);
+  }
   if (merged.length <= MAX_TIMELINE_SIZE) {
     return merged;
   }
   return merged.slice(merged.length - MAX_TIMELINE_SIZE);
 }
 
+function appendAgentStream(current: AgentStreamEntry[], audit: DecisionAudit | null | undefined): AgentStreamEntry[] {
+  if (!audit) {
+    return current;
+  }
+  const entry: AgentStreamEntry = {
+    ts: new Date().toISOString(),
+    modelTag: audit.model_tag,
+    action: audit.final_decision.action,
+    status: audit.status,
+    summary: audit.raw_response_summary,
+  };
+  const merged = [...current, entry];
+  if (merged.length <= MAX_AGENT_STREAM) {
+    return merged;
+  }
+  return merged.slice(merged.length - MAX_AGENT_STREAM);
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
-  gameId: "demo-room",
+  gameId: "",
+  roomName: "",
   state: null,
   timeline: [],
   replay: null,
   replayIndex: 0,
   summary: null,
   activeAudit: null,
+  agentStream: [],
   wsStatus: "idle",
   wsRetryCount: 0,
   isBusy: false,
@@ -80,6 +112,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ gameId, error: null });
   },
 
+  setRoomName: (roomName) => {
+    set({ roomName, error: null });
+  },
+
   refreshGameList: async () => {
     try {
       const games = await gamesApi.listGames();
@@ -89,33 +125,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  createAndLoadGame: async (maxRounds, seed) => {
-    const gameId = get().gameId.trim();
-    if (!gameId) {
-      set({ error: "gameId 不能为空" });
-      return;
-    }
-
+  createAndLoadGame: async (payload) => {
     set({ isBusy: true, error: null });
     try {
-      const state = await gamesApi.createGame({
-        game_id: gameId,
-        players: DEFAULT_PLAYERS,
-        max_rounds: maxRounds,
-        seed,
-      });
+      const created = await gamesApi.createGame(payload);
       set({
-        state,
-        timeline: state.last_events,
+        gameId: created.game_id,
+        roomName: payload.room_name ?? created.game_id,
+        state: created.state,
+        timeline: created.state.last_events,
         replay: null,
         replayIndex: 0,
         summary: null,
         activeAudit: null,
+        agentStream: [],
       });
       await get().refreshGameList();
       get().connectWs();
+      return created.game_id;
     } catch (error) {
       set({ error: `create game failed: ${String(error)}` });
+      return null;
     } finally {
       set({ isBusy: false });
     }
@@ -167,6 +197,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             state: payload.state ?? current.state,
             timeline: nextTimeline,
             activeAudit: payload.audit ?? current.activeAudit,
+            agentStream: appendAgentStream(current.agentStream, payload.audit),
           };
         });
       },
@@ -191,18 +222,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({ isBusy: true, error: null });
     try {
-      const result = await gamesApi.submitAction(
-        currentState.game_id,
-        currentState.current_player_id,
-        action,
-        args
-      );
+      const result = await gamesApi.submitAction(currentState.game_id, currentState.current_player_id, action, args);
       set((current) => {
         const incomingEvents = result.event ? [result.event] : [];
         return {
           state: result.state ?? current.state,
           timeline: appendTimeline(current.timeline, incomingEvents),
           activeAudit: result.audit ?? current.activeAudit,
+          agentStream: appendAgentStream(current.agentStream, result.audit),
           error: result.accepted ? null : result.message,
         };
       });
@@ -222,21 +249,50 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({ isBusy: true, error: null });
     try {
-      const result = await gamesApi.triggerAgent(
-        currentState.game_id,
-        currentState.current_player_id
-      );
+      const result = await gamesApi.triggerAgent(currentState.game_id, currentState.current_player_id);
       set((current) => {
         const incomingEvents = result.event ? [result.event] : [];
         return {
           state: result.state ?? current.state,
           timeline: appendTimeline(current.timeline, incomingEvents),
           activeAudit: result.audit ?? current.activeAudit,
+          agentStream: appendAgentStream(current.agentStream, result.audit),
           error: result.accepted ? null : result.message,
         };
       });
     } catch (error) {
       set({ error: `agent action failed: ${String(error)}` });
+    } finally {
+      set({ isBusy: false });
+    }
+  },
+
+  autoPlayAgents: async (maxSteps = 16) => {
+    const currentState = get().state;
+    if (!currentState) {
+      set({ error: "state 未加载" });
+      return;
+    }
+
+    set({ isBusy: true, error: null });
+    try {
+      const result = await gamesApi.autoPlayAgents(currentState.game_id, maxSteps);
+      const latestAudit = result.audits.length > 0 ? result.audits[result.audits.length - 1] : null;
+      set((current) => {
+        let nextStream = current.agentStream;
+        for (const audit of result.audits) {
+          nextStream = appendAgentStream(nextStream, audit);
+        }
+        return {
+          state: result.state,
+          timeline: appendTimeline(current.timeline, result.state.last_events),
+          activeAudit: latestAudit ?? current.activeAudit,
+          agentStream: nextStream,
+          error: result.steps > 0 || result.stopped_reason === "human_turn" ? null : result.stopped_reason,
+        };
+      });
+    } catch (error) {
+      set({ error: `auto play failed: ${String(error)}` });
     } finally {
       set({ isBusy: false });
     }

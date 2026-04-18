@@ -1,5 +1,8 @@
 import type {
   ActionResponse,
+  AgentOptions,
+  AutoPlayResponse,
+  CreateGameResponse,
   CreateGameRequest,
   GameState,
   ReplayResponse,
@@ -29,12 +32,11 @@ export const gamesApi = {
     return data.games;
   },
 
-  createGame: async (payload: CreateGameRequest): Promise<GameState> => {
-    const data = await request<{ game_id: string; state: GameState }>("/games", {
+  createGame: async (payload: CreateGameRequest): Promise<CreateGameResponse> => {
+    return request<CreateGameResponse>("/games", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    return data.state;
   },
 
   getState: async (gameId: string): Promise<GameState> => {
@@ -63,11 +65,19 @@ export const gamesApi = {
       method: "POST",
     }),
 
+  autoPlayAgents: async (gameId: string, maxSteps = 16): Promise<AutoPlayResponse> =>
+    request<AutoPlayResponse>(`/games/${gameId}/auto-play?max_steps=${maxSteps}`, {
+      method: "POST",
+    }),
+
   getReplay: async (gameId: string): Promise<ReplayResponse> =>
     request<ReplayResponse>(`/games/${gameId}/replay`),
 
   getSummary: async (gameId: string): Promise<ReplaySummary> =>
     request<ReplaySummary>(`/games/${gameId}/summary`),
+
+  getAgentOptions: async (): Promise<AgentOptions> =>
+    request<AgentOptions>("/games/agent-options"),
 };
 
 export function wsUrlForGame(gameId: string): string {

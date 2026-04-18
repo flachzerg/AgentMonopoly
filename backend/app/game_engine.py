@@ -1,674 +1,38 @@
+from __future__ import annotations
+
 import random
-import time
-import uuid
-from collections.abc import Iterable
-from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
 from app.schemas import (
-    ActionCommand,
     ActionOption,
-    ActionType,
+    AgentConfig,
     AgentDecisionEnvelope,
     BoardTileSnapshot,
-    DecisionOptions,
-    ErrorCode,
-    EventEnvelope,
     EventRecord,
-    GameSnapshot,
     GameState,
-    OutputContract,
-    Phase,
     PlayerConfig,
     PlayerSnapshot,
     ReplayResponse,
     ReplayStep,
     TileContext,
     TileState,
-    TileType,
-    TurnInputV31,
     TurnMeta,
-    TurnOutputV31,
 )
-
-PHASE_TRANSITIONS: dict[Phase, Phase | None] = {
-    Phase.ROLL: Phase.TILE_ENTER,
-    Phase.TILE_ENTER: Phase.AUTO_SETTLE,
-    Phase.AUTO_SETTLE: Phase.DECISION,
-    Phase.DECISION: Phase.EXECUTE,
-    Phase.EXECUTE: Phase.LOG,
-    Phase.LOG: None,
-}
-
-PHASE_ALLOWED_ACTIONS: dict[Phase, set[ActionType]] = {
-    Phase.ROLL: {ActionType.ROLL_DICE},
-    Phase.TILE_ENTER: {ActionType.PASS},
-    Phase.AUTO_SETTLE: {ActionType.PASS},
-    Phase.DECISION: {
-        ActionType.BUY_PROPERTY,
-        ActionType.UPGRADE_PROPERTY,
-        ActionType.BANK_DEPOSIT,
-        ActionType.BANK_WITHDRAW,
-        ActionType.EVENT_CHOICE,
-        ActionType.PROPOSE_ALLIANCE,
-        ActionType.ACCEPT_ALLIANCE,
-        ActionType.REJECT_ALLIANCE,
-        ActionType.PASS,
-    },
-    Phase.EXECUTE: {ActionType.PASS},
-    Phase.LOG: {ActionType.PASS},
-}
-
-DEFAULT_BOARD = [
-    {"type": TileType.START, "name": "Start", "reward": 200},
-    {"type": TileType.EMPTY, "name": "Empty-1"},
-    {"type": TileType.BANK, "name": "Bank"},
-    {"type": TileType.EVENT, "name": "Event-Auto", "event_mode": "auto", "delta": 120},
-    {
-        "type": TileType.EVENT,
-        "name": "Event-Choice",
-        "event_mode": "choice",
-        "choices": {"safe": 60, "risky": -80},
-    },
-    {"type": TileType.PROPERTY, "name": "P-5", "base_price": 200, "upgrade_cost": 120, "toll_base": 80},
-    {"type": TileType.EMPTY, "name": "Empty-6"},
-    {"type": TileType.PROPERTY, "name": "P-7", "base_price": 240, "upgrade_cost": 120, "toll_base": 90},
-]
-
-
-def initialize_game_state(
-    game_id: str,
-    player_ids: list[str],
-    start_cash: int = 1000,
-    start_deposit: int = 0,
-    board: list[dict] | None = None,
-) -> dict:
-    players = {
-        pid: {
-            "player_id": pid,
-            "position": 0,
-            "cash": start_cash,
-            "deposit": start_deposit,
-            "alive": True,
-            "properties": [],
-        }
-        for pid in player_ids
-    }
-    return {
-        "game_id": game_id,
-        "round_index": 1,
-        "turn_seq": 0,
-        "player_order": player_ids,
-        "current_player_idx": 0,
-        "phase": Phase.ROLL,
-        "board": deepcopy(board or DEFAULT_BOARD),
-        "players": players,
-        "alliances": {pid: None for pid in player_ids},
-        "pending_alliance": set(),  # {(from, to)}
-    }
-
-
-def validate_action(action: ActionType, allowed_actions: Iterable[ActionType]) -> bool:
-    return action in set(allowed_actions)
-
-
-def get_next_phase(phase: Phase) -> Phase | None:
-    return PHASE_TRANSITIONS.get(phase)
-
-
-def validate_phase_transition(current_phase: Phase, target_phase: Phase | None) -> bool:
-    return PHASE_TRANSITIONS.get(current_phase) == target_phase
-
-
-def validate_phase_action(phase: Phase, action: ActionType) -> tuple[bool, ErrorCode | None]:
-    allowed_actions = PHASE_ALLOWED_ACTIONS.get(phase, set())
-    if action not in allowed_actions:
-        return False, ErrorCode.ILLEGAL_ACTION_FOR_PHASE
-    return True, None
-
-
-def build_decision_options(phase: Phase) -> DecisionOptions:
-    return DecisionOptions(
-        phase=phase,
-        allowed_actions=sorted(PHASE_ALLOWED_ACTIONS.get(phase, set()), key=lambda x: x.value),
-    )
-
-
-def run_turn(turn_input: TurnInputV31) -> TurnOutputV31:
-    next_phase = get_next_phase(turn_input.phase)
-    if turn_input.protocol_version != "DY-MONO-TURN-IN/3.1":
-        contract = OutputContract(
-            accepted=False,
-            error_code=ErrorCode.INVALID_PARAMS,
-            message="unsupported protocol version",
-        )
-        return _build_output(turn_input, contract, next_phase=None, events=[])
-
-    command_action = turn_input.command.action if turn_input.command else ActionType.PASS
-    is_action_valid, error_code = validate_phase_action(turn_input.phase, command_action)
-    if not is_action_valid:
-        contract = OutputContract(
-            accepted=False,
-            fallback_used=True,
-            error_code=error_code,
-            message="action not allowed in current phase",
-        )
-        return _build_output(turn_input, contract, next_phase=next_phase, events=[])
-
-    events = _emit_phase_events(turn_input, command_action)
-    contract = OutputContract(
-        accepted=True,
-        fallback_used=False,
-        message="turn phase executed",
-    )
-    return _build_output(turn_input, contract, next_phase=next_phase, events=events)
-
-
-def run_game_turn(
-    game_state: dict,
-    player_id: str,
-    decision: ActionCommand | None = None,
-    dice_value: int | None = None,
-) -> TurnOutputV31:
-    turn_id = f"turn-{uuid.uuid4().hex[:8]}"
-    events: list[EventEnvelope] = []
-    player = game_state["players"].get(player_id)
-    if not player or not player["alive"]:
-        return _build_turn_result_for_state(
-            game_state=game_state,
-            player_id=player_id,
-            turn_id=turn_id,
-            phase=Phase.LOG,
-            next_phase=Phase.ROLL,
-            events=events,
-            contract=OutputContract(
-                accepted=False,
-                error_code=ErrorCode.RESOURCE_NOT_FOUND,
-                message="player not available",
-            ),
-            tile_type=TileType.EMPTY,
-        )
-
-    game_state["turn_seq"] += 1
-    # ROLL
-    phase = Phase.ROLL
-    rolled = dice_value if dice_value is not None else random.randint(1, 6)
-    _append_event(events, game_state, turn_id, phase, "dice.rolled", {"dice": rolled})
-    board_size = len(game_state["board"])
-    old_pos = player["position"]
-    new_pos = (old_pos + rolled) % board_size
-    passed_start = old_pos + rolled >= board_size
-    player["position"] = new_pos
-    _append_event(
-        events,
-        game_state,
-        turn_id,
-        Phase.TILE_ENTER,
-        "player.moved",
-        {"from": old_pos, "to": new_pos, "passed_start": passed_start},
-    )
-    tile = game_state["board"][new_pos]
-    tile_type = TileType(tile["type"])
-
-    # AUTO_SETTLE
-    _auto_settle(game_state, player_id, tile, passed_start, events, turn_id)
-
-    # DECISION + EXECUTE
-    allowed_actions = _decision_actions_for_tile(game_state, player_id, tile)
-    selected = decision.action if decision else ActionType.PASS
-    if selected not in allowed_actions:
-        selected = ActionType.PASS
-        _append_event(
-            events,
-            game_state,
-            turn_id,
-            Phase.DECISION,
-            "action.rejected",
-            {"reason": ErrorCode.ILLEGAL_ACTION_FOR_PHASE.value},
-        )
-    _execute_decision(
-        game_state=game_state,
-        player_id=player_id,
-        tile=tile,
-        action=selected,
-        params=decision.params if decision else {},
-        events=events,
-        turn_id=turn_id,
-    )
-
-    # LOG + round rotate
-    _append_event(events, game_state, turn_id, Phase.LOG, "turn.finished", {"player_id": player_id})
-    game_state["current_player_idx"] = (game_state["current_player_idx"] + 1) % len(game_state["player_order"])
-    if game_state["current_player_idx"] == 0:
-        game_state["round_index"] += 1
-    game_state["phase"] = Phase.ROLL
-
-    return _build_turn_result_for_state(
-        game_state=game_state,
-        player_id=player_id,
-        turn_id=turn_id,
-        phase=Phase.LOG,
-        next_phase=Phase.ROLL,
-        events=events,
-        contract=OutputContract(accepted=True, message="full turn executed"),
-        tile_type=tile_type,
-        allowed_actions=allowed_actions,
-    )
-
-
-def _auto_settle(
-    game_state: dict,
-    player_id: str,
-    tile: dict,
-    passed_start: bool,
-    events: list[EventEnvelope],
-    turn_id: str,
-) -> None:
-    player = game_state["players"][player_id]
-    tile_type = TileType(tile["type"])
-    if passed_start:
-        reward = game_state["board"][0].get("reward", 200)
-        player["cash"] += reward
-        _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "start.passed", {"reward": reward})
-
-    if tile_type == TileType.START:
-        reward = tile.get("reward", 200)
-        player["cash"] += reward
-        _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "start.landed", {"reward": reward})
-        return
-    if tile_type == TileType.EMPTY:
-        _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "empty.entered", {})
-        return
-    if tile_type == TileType.BANK:
-        _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "bank.entered", {})
-        return
-    if tile_type == TileType.EVENT and tile.get("event_mode") == "auto":
-        delta = int(tile.get("delta", 0))
-        player["cash"] += delta
-        _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "event.auto", {"delta": delta})
-        return
-    if tile_type == TileType.PROPERTY:
-        owner = tile.get("owner_id")
-        if not owner:
-            _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "property.unowned", {})
-            return
-        if owner == player_id:
-            _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "property.self", {})
-            return
-        if _is_ally(game_state, player_id, owner):
-            _append_event(events, game_state, turn_id, Phase.AUTO_SETTLE, "toll.waived", {"owner_id": owner})
-            return
-        toll = _calc_toll(tile)
-        paid = _charge_player(game_state, payer_id=player_id, amount=toll, events=events, turn_id=turn_id, reason="toll")
-        game_state["players"][owner]["cash"] += paid
-        _append_event(
-            events,
-            game_state,
-            turn_id,
-            Phase.AUTO_SETTLE,
-            "toll.paid",
-            {"owner_id": owner, "toll": toll, "paid": paid},
-        )
-
-
-def _decision_actions_for_tile(game_state: dict, player_id: str, tile: dict) -> set[ActionType]:
-    if not game_state["players"][player_id]["alive"]:
-        return {ActionType.PASS}
-    tile_type = TileType(tile["type"])
-    actions = {
-        ActionType.PROPOSE_ALLIANCE,
-        ActionType.ACCEPT_ALLIANCE,
-        ActionType.REJECT_ALLIANCE,
-        ActionType.PASS,
-    }
-    if tile_type == TileType.BANK:
-        actions.update({ActionType.BANK_DEPOSIT, ActionType.BANK_WITHDRAW})
-    if tile_type == TileType.EVENT and tile.get("event_mode") == "choice":
-        actions.add(ActionType.EVENT_CHOICE)
-    if tile_type == TileType.PROPERTY:
-        owner = tile.get("owner_id")
-        if owner is None:
-            actions.add(ActionType.BUY_PROPERTY)
-        elif owner == player_id:
-            actions.add(ActionType.UPGRADE_PROPERTY)
-    return actions
-
-
-def _execute_decision(
-    game_state: dict,
-    player_id: str,
-    tile: dict,
-    action: ActionType,
-    params: dict,
-    events: list[EventEnvelope],
-    turn_id: str,
-) -> None:
-    player = game_state["players"][player_id]
-    tile_type = TileType(tile["type"])
-
-    if action == ActionType.BUY_PROPERTY and tile_type == TileType.PROPERTY and not tile.get("owner_id"):
-        price = int(tile.get("base_price", 200))
-        paid = _charge_player(game_state, payer_id=player_id, amount=price, events=events, turn_id=turn_id, reason="buy")
-        if paid >= price:
-            tile["owner_id"] = player_id
-            tile["level"] = 0
-            player["properties"].append(player["position"])
-            _append_event(events, game_state, turn_id, Phase.EXECUTE, "property.bought", {"price": price})
-        return
-
-    if action == ActionType.UPGRADE_PROPERTY and tile_type == TileType.PROPERTY and tile.get("owner_id") == player_id:
-        cost = int(tile.get("upgrade_cost", 120))
-        paid = _charge_player(game_state, payer_id=player_id, amount=cost, events=events, turn_id=turn_id, reason="upgrade")
-        if paid >= cost:
-            tile["level"] = int(tile.get("level", 0)) + 1
-            _append_event(
-                events,
-                game_state,
-                turn_id,
-                Phase.EXECUTE,
-                "property.upgraded",
-                {"cost": cost, "level": tile["level"]},
-            )
-        return
-
-    if action == ActionType.BANK_DEPOSIT:
-        amount = max(0, int(params.get("amount", 0)))
-        amount = min(amount, player["cash"])
-        player["cash"] -= amount
-        player["deposit"] += amount
-        _append_event(events, game_state, turn_id, Phase.EXECUTE, "bank.deposit", {"amount": amount})
-        return
-
-    if action == ActionType.BANK_WITHDRAW:
-        amount = max(0, int(params.get("amount", 0)))
-        amount = min(amount, player["deposit"])
-        player["deposit"] -= amount
-        player["cash"] += amount
-        _append_event(events, game_state, turn_id, Phase.EXECUTE, "bank.withdraw", {"amount": amount})
-        return
-
-    if action == ActionType.EVENT_CHOICE and tile_type == TileType.EVENT:
-        key = str(params.get("choice", "safe"))
-        choices = tile.get("choices", {})
-        delta = int(choices.get(key, 0))
-        player["cash"] += delta
-        _append_event(events, game_state, turn_id, Phase.EXECUTE, "event.choice", {"choice": key, "delta": delta})
-        return
-
-    if action == ActionType.PROPOSE_ALLIANCE:
-        target = str(params.get("target_player_id", ""))
-        if target in game_state["players"] and target != player_id:
-            game_state["pending_alliance"].add((player_id, target))
-            _append_event(
-                events,
-                game_state,
-                turn_id,
-                Phase.EXECUTE,
-                "alliance.proposed",
-                {"from": player_id, "to": target},
-            )
-        return
-
-    if action == ActionType.ACCEPT_ALLIANCE:
-        requester = str(params.get("requester_player_id", ""))
-        if (requester, player_id) in game_state["pending_alliance"]:
-            if game_state["alliances"].get(player_id) is None and game_state["alliances"].get(requester) is None:
-                game_state["pending_alliance"].discard((requester, player_id))
-                game_state["alliances"][player_id] = requester
-                game_state["alliances"][requester] = player_id
-                _append_event(
-                    events,
-                    game_state,
-                    turn_id,
-                    Phase.EXECUTE,
-                    "alliance.formed",
-                    {"a": requester, "b": player_id},
-                )
-        return
-
-    if action == ActionType.REJECT_ALLIANCE:
-        requester = str(params.get("requester_player_id", ""))
-        game_state["pending_alliance"].discard((requester, player_id))
-        _append_event(
-            events,
-            game_state,
-            turn_id,
-            Phase.EXECUTE,
-            "alliance.rejected",
-            {"from": requester, "to": player_id},
-        )
-
-
-def _charge_player(
-    game_state: dict,
-    payer_id: str,
-    amount: int,
-    events: list[EventEnvelope],
-    turn_id: str,
-    reason: str,
-) -> int:
-    player = game_state["players"][payer_id]
-    need = amount
-    paid = 0
-    cash_used = min(player["cash"], need)
-    player["cash"] -= cash_used
-    need -= cash_used
-    paid += cash_used
-    deposit_used = min(player["deposit"], need)
-    player["deposit"] -= deposit_used
-    need -= deposit_used
-    paid += deposit_used
-
-    if need > 0:
-        _append_event(
-            events,
-            game_state,
-            turn_id,
-            Phase.AUTO_SETTLE,
-            "insolvent.triggered",
-            {"player_id": payer_id, "remaining_debt": need, "reason": reason},
-        )
-        recovered = _auction_properties(game_state, payer_id, need, events, turn_id)
-        paid += recovered
-        need -= recovered
-        if need > 0:
-            player["alive"] = False
-            _append_event(
-                events,
-                game_state,
-                turn_id,
-                Phase.AUTO_SETTLE,
-                "player.bankrupt",
-                {"player_id": payer_id, "remaining_debt": need},
-            )
-    return paid
-
-
-def _auction_properties(
-    game_state: dict,
-    owner_id: str,
-    target_amount: int,
-    events: list[EventEnvelope],
-    turn_id: str,
-) -> int:
-    owner = game_state["players"][owner_id]
-    recovered = 0
-    owned_positions = list(owner["properties"])
-    for pos in owned_positions:
-        tile = game_state["board"][pos]
-        reserve = int(tile.get("base_price", 200)) + int(tile.get("level", 0)) * int(tile.get("upgrade_cost", 120))
-        buyer_id = _find_buyer(game_state, owner_id, reserve)
-        if not buyer_id:
-            continue
-        buyer = game_state["players"][buyer_id]
-        buyer["cash"] -= reserve
-        owner["cash"] += reserve
-        recovered += reserve
-        tile["owner_id"] = buyer_id
-        owner["properties"].remove(pos)
-        buyer["properties"].append(pos)
-        _append_event(
-            events,
-            game_state,
-            turn_id,
-            Phase.AUTO_SETTLE,
-            "auction.sold",
-            {"position": pos, "from": owner_id, "to": buyer_id, "price": reserve},
-        )
-        if recovered >= target_amount:
-            break
-    return recovered
-
-
-def _find_buyer(game_state: dict, exclude_player_id: str, price: int) -> str | None:
-    for pid, player in game_state["players"].items():
-        if pid == exclude_player_id:
-            continue
-        if player["alive"] and player["cash"] >= price:
-            return pid
-    return None
-
-
-def _is_ally(game_state: dict, player_a: str, player_b: str) -> bool:
-    return game_state["alliances"].get(player_a) == player_b and game_state["alliances"].get(player_b) == player_a
-
-
-def _calc_toll(tile: dict) -> int:
-    return int(tile.get("toll_base", 80)) + int(tile.get("level", 0)) * 40
-
-
-def _append_event(
-    events: list[EventEnvelope],
-    game_state: dict,
-    turn_id: str,
-    phase: Phase,
-    event_type: str,
-    payload: dict,
-) -> None:
-    events.append(
-        EventEnvelope(
-            event_id=str(uuid.uuid4()),
-            game_id=game_state["game_id"],
-            round_index=game_state["round_index"],
-            turn_id=turn_id,
-            phase=phase,
-            event_type=event_type,
-            ts=time.time(),
-            payload=payload,
-        )
-    )
-
-
-def _build_turn_result_for_state(
-    game_state: dict,
-    player_id: str,
-    turn_id: str,
-    phase: Phase,
-    next_phase: Phase | None,
-    events: list[EventEnvelope],
-    contract: OutputContract,
-    tile_type: TileType,
-    allowed_actions: set[ActionType] | None = None,
-) -> TurnOutputV31:
-    players = [
-        PlayerSnapshot(
-            player_id=pid,
-            position=p["position"],
-            cash=p["cash"],
-            deposit=p["deposit"],
-            alive=p["alive"],
-        )
-        for pid, p in game_state["players"].items()
-    ]
-    snapshot = GameSnapshot(
-        game_id=game_state["game_id"],
-        round_index=game_state["round_index"],
-        current_player_id=game_state["player_order"][game_state["current_player_idx"]],
-        phase=phase,
-        tile_type=tile_type,
-        players=players,
-    )
-    options = DecisionOptions(phase=Phase.DECISION, allowed_actions=sorted(allowed_actions, key=lambda x: x.value)) if allowed_actions is not None else build_decision_options(phase)
-    return TurnOutputV31(
-        game_id=game_state["game_id"],
-        player_id=player_id,
-        turn_id=turn_id,
-        round_index=game_state["round_index"],
-        phase=phase,
-        next_phase=next_phase,
-        decision_options=options,
-        output_contract=contract,
-        events=events,
-        snapshot=snapshot,
-    )
-
-
-def _emit_phase_events(turn_input: TurnInputV31, action: ActionType) -> list[EventEnvelope]:
-    base_event = EventEnvelope(
-        event_id=str(uuid.uuid4()),
-        game_id=turn_input.game_id,
-        round_index=turn_input.round_index,
-        turn_id=turn_input.turn_id,
-        phase=turn_input.phase,
-        event_type=f"phase.{turn_input.phase.value.lower()}",
-        ts=time.time(),
-        payload={"action": action.value},
-    )
-    events = [base_event]
-    if turn_input.phase == Phase.ROLL and action == ActionType.ROLL_DICE:
-        events.append(
-            EventEnvelope(
-                event_id=str(uuid.uuid4()),
-                game_id=turn_input.game_id,
-                round_index=turn_input.round_index,
-                turn_id=turn_input.turn_id,
-                phase=turn_input.phase,
-                event_type="dice.rolled",
-                ts=time.time(),
-                payload={"dice": random.randint(1, 6)},
-            )
-        )
-    return events
-
-
-def _build_output(
-    turn_input: TurnInputV31,
-    contract: OutputContract,
-    next_phase: Phase | None,
-    events: list[EventEnvelope],
-) -> TurnOutputV31:
-    snapshot = GameSnapshot(
-        game_id=turn_input.game_id,
-        round_index=turn_input.round_index,
-        current_player_id=turn_input.player_id,
-        phase=turn_input.phase,
-        tile_type=turn_input.tile_type,
-        players=[PlayerSnapshot(player_id=turn_input.player_id)],
-    )
-    return TurnOutputV31(
-        game_id=turn_input.game_id,
-        player_id=turn_input.player_id,
-        turn_id=turn_input.turn_id,
-        round_index=turn_input.round_index,
-        phase=turn_input.phase,
-        next_phase=next_phase,
-        decision_options=build_decision_options(turn_input.phase),
-        output_contract=contract,
-        events=events,
-        snapshot=snapshot,
-    )
-
 
 VALID_ACTIONS = {
     "roll_dice",
     "buy_property",
     "skip_buy",
+    "upgrade_property",
     "bank_deposit",
     "bank_withdraw",
+    "event_choice",
     "propose_alliance",
+    "accept_alliance",
+    "reject_alliance",
     "pass",
 }
 
@@ -678,6 +42,7 @@ class Player:
     player_id: str
     name: str
     is_agent: bool
+    agent_config: AgentConfig | None = None
     cash: int = 2000
     deposit: int = 500
     position: int = 0
@@ -716,6 +81,7 @@ class GameSession:
     events: list[EventRecord] = field(default_factory=list)
     replay_steps: list[ReplayStep] = field(default_factory=list)
     allowed_actions: list[ActionOption] = field(default_factory=list)
+    pending_alliances: set[tuple[str, str]] = field(default_factory=set)
 
 
 class GameManager:
@@ -732,7 +98,15 @@ class GameManager:
             game_id=game_id,
             max_rounds=max_rounds,
             rng=random.Random(seed),
-            players=[Player(player_id=item.player_id, name=item.name, is_agent=item.is_agent) for item in players],
+            players=[
+                Player(
+                    player_id=item.player_id,
+                    name=item.name,
+                    is_agent=item.is_agent,
+                    agent_config=item.agent_config,
+                )
+                for item in players
+            ],
             board=build_default_board(),
         )
         session.allowed_actions = self._allowed_actions(session)
@@ -788,6 +162,8 @@ class GameManager:
         current_player = session.players[session.current_player_index]
         if player_id != current_player.player_id:
             return False, "not current player", None
+        if not current_player.alive:
+            return False, "current player is bankrupt", None
 
         if not self.valid_action(action, session.allowed_actions):
             self._append_event(
@@ -808,8 +184,10 @@ class GameManager:
 
         merged_args = option.default_args | args
         event = self._execute_action(session, current_player, action, merged_args)
-        if action in {"buy_property", "skip_buy", "bank_deposit", "bank_withdraw", "propose_alliance", "pass"}:
+
+        if session.current_phase == "DECISION" and action != "roll_dice":
             self._finalize_turn(session, decision_audit)
+
         return True, "action accepted", event
 
     def advance_to_decision_if_needed(self, game_id: str, player_id: str) -> None:
@@ -847,6 +225,23 @@ class GameManager:
             tile_subtype=tile_context.tile_subtype,
         )
 
+    def build_players_snapshot(self, session: GameSession) -> list[PlayerSnapshot]:
+        return [self._to_player_snapshot(session, item) for item in session.players]
+
+    def build_board_snapshot(self, session: GameSession) -> list[BoardTileSnapshot]:
+        return [
+            BoardTileSnapshot(
+                tile_id=item.tile_id,
+                tile_index=item.tile_index,
+                tile_type=item.tile_type,
+                tile_subtype=item.tile_subtype,
+                owner_id=item.owner_id,
+                property_price=item.property_price,
+                toll=item.toll,
+            )
+            for item in session.board
+        ]
+
     def _finalize_turn(self, session: GameSession, decision_audit: AgentDecisionEnvelope | None) -> None:
         snapshot = self._to_state(session)
         step = ReplayStep(
@@ -855,7 +250,7 @@ class GameManager:
             phase="LOG",
             phase_trace=["ROLL", "TILE_ENTER", "AUTO_SETTLE", "DECISION", "EXECUTE", "LOG"],
             state=snapshot,
-            events=session.events[-5:],
+            events=session.events[-8:],
             candidate_actions=(decision_audit.decision.candidate_actions if decision_audit else []),
             final_action=(decision_audit.decision.action if decision_audit else None),
             strategy_tags=(decision_audit.decision.strategy_tags if decision_audit else []),
@@ -880,22 +275,36 @@ class GameManager:
             )
             return
 
+        self._advance_to_next_alive_player(session)
         session.turn_index += 1
-        session.current_player_index = (session.current_player_index + 1) % len(session.players)
-        if session.current_player_index == 0:
-            session.round_index += 1
         session.current_phase = "ROLL"
         current_player = session.players[session.current_player_index]
         session.active_tile_index = current_player.position
         session.allowed_actions = self._allowed_actions(session)
+
+    def _advance_to_next_alive_player(self, session: GameSession) -> None:
+        total = len(session.players)
+        start = session.current_player_index
+        wrapped = False
+
+        while True:
+            next_index = (session.current_player_index + 1) % total
+            if next_index == 0:
+                wrapped = True
+            session.current_player_index = next_index
+            if session.players[next_index].alive:
+                if wrapped:
+                    session.round_index += 1
+                return
+            if next_index == start:
+                return
 
     def _execute_action(self, session: GameSession, player: Player, action: str, args: dict[str, Any]) -> EventRecord | None:
         if action == "roll_dice":
             return self._roll_and_settle(session, player)
 
         if action == "buy_property":
-            tile_id = str(args["tile_id"])
-            tile = self._find_tile(session, tile_id)
+            tile = self._find_tile(session, str(args["tile_id"]))
             if tile.owner_id is not None:
                 return self._append_event(
                     session,
@@ -911,7 +320,8 @@ class GameManager:
                 )
             player.cash -= price
             tile.owner_id = player.player_id
-            player.property_ids.append(tile.tile_id)
+            if tile.tile_id not in player.property_ids:
+                player.property_ids.append(tile.tile_id)
             return self._append_event(
                 session,
                 "action.accepted",
@@ -921,6 +331,35 @@ class GameManager:
         if action == "skip_buy":
             return self._append_event(session, "action.accepted", {"player_id": player.player_id, "action": action})
 
+        if action == "upgrade_property":
+            tile = self._find_tile(session, str(args["tile_id"]))
+            if tile.owner_id != player.player_id:
+                return self._append_event(
+                    session,
+                    "action.rejected",
+                    {"player_id": player.player_id, "action": action, "reason": "not_owner"},
+                )
+            upgrade_cost = max((tile.property_price or 0) // 2, 100)
+            if player.cash < upgrade_cost:
+                return self._append_event(
+                    session,
+                    "action.rejected",
+                    {"player_id": player.player_id, "action": action, "reason": "cash_not_enough"},
+                )
+            player.cash -= upgrade_cost
+            tile.toll = (tile.toll or 0) + max(upgrade_cost // 4, 20)
+            return self._append_event(
+                session,
+                "action.accepted",
+                {
+                    "player_id": player.player_id,
+                    "action": action,
+                    "tile_id": tile.tile_id,
+                    "upgrade_cost": upgrade_cost,
+                    "new_toll": tile.toll,
+                },
+            )
+
         if action == "bank_deposit":
             amount = int(args["amount"])
             player.cash -= amount
@@ -928,7 +367,13 @@ class GameManager:
             return self._append_event(
                 session,
                 "action.accepted",
-                {"player_id": player.player_id, "action": action, "amount": amount, "cash": player.cash, "deposit": player.deposit},
+                {
+                    "player_id": player.player_id,
+                    "action": action,
+                    "amount": amount,
+                    "cash": player.cash,
+                    "deposit": player.deposit,
+                },
             )
 
         if action == "bank_withdraw":
@@ -938,7 +383,39 @@ class GameManager:
             return self._append_event(
                 session,
                 "action.accepted",
-                {"player_id": player.player_id, "action": action, "amount": amount, "cash": player.cash, "deposit": player.deposit},
+                {
+                    "player_id": player.player_id,
+                    "action": action,
+                    "amount": amount,
+                    "cash": player.cash,
+                    "deposit": player.deposit,
+                },
+            )
+
+        if action == "event_choice":
+            tile = session.board[session.active_tile_index]
+            if tile.tile_type != "EVENT":
+                return self._append_event(
+                    session,
+                    "action.rejected",
+                    {"player_id": player.player_id, "action": action, "reason": "not_event_tile"},
+                )
+            choice = str(args.get("choice", "safe"))
+            if choice == "safe":
+                delta = 80
+            else:
+                delta = session.rng.choice([220, -150, -240])
+            player.cash = max(0, player.cash + delta)
+            return self._append_event(
+                session,
+                "action.accepted",
+                {
+                    "player_id": player.player_id,
+                    "action": action,
+                    "choice": choice,
+                    "delta": delta,
+                    "cash": player.cash,
+                },
             )
 
         if action == "propose_alliance":
@@ -956,12 +433,44 @@ class GameManager:
                     "action.rejected",
                     {"player_id": player.player_id, "action": action, "reason": "alliance_busy"},
                 )
-            player.alliance_with = target.player_id
-            target.alliance_with = player.player_id
+            session.pending_alliances.add((player.player_id, target.player_id))
+            return self._append_event(
+                session,
+                "alliance.proposed",
+                {"player_id": player.player_id, "target_player_id": target.player_id},
+            )
+
+        if action == "accept_alliance":
+            requester_id = str(args["requester_player_id"])
+            requester = self._find_player(session, requester_id)
+            if (requester.player_id, player.player_id) not in session.pending_alliances:
+                return self._append_event(
+                    session,
+                    "action.rejected",
+                    {"player_id": player.player_id, "action": action, "reason": "request_missing"},
+                )
+            if requester.alliance_with or player.alliance_with:
+                return self._append_event(
+                    session,
+                    "action.rejected",
+                    {"player_id": player.player_id, "action": action, "reason": "alliance_busy"},
+                )
+            session.pending_alliances.discard((requester.player_id, player.player_id))
+            requester.alliance_with = player.player_id
+            player.alliance_with = requester.player_id
             return self._append_event(
                 session,
                 "alliance.created",
-                {"player_id": player.player_id, "target_player_id": target.player_id},
+                {"player_id": player.player_id, "target_player_id": requester.player_id},
+            )
+
+        if action == "reject_alliance":
+            requester_id = str(args["requester_player_id"])
+            session.pending_alliances.discard((requester_id, player.player_id))
+            return self._append_event(
+                session,
+                "alliance.rejected",
+                {"player_id": player.player_id, "requester_player_id": requester_id},
             )
 
         return self._append_event(session, "action.accepted", {"player_id": player.player_id, "action": "pass"})
@@ -978,16 +487,21 @@ class GameManager:
         self._append_event(
             session,
             "dice.rolled",
-            {"player_id": player.player_id, "dice": dice, "position": player.position, "passed_start": passed_start},
+            {
+                "player_id": player.player_id,
+                "dice": dice,
+                "position": player.position,
+                "passed_start": passed_start,
+            },
         )
         session.current_phase = "AUTO_SETTLE"
         tile = session.board[player.position]
-        settle_event = self._auto_settle_v2(session, player, tile)
+        settle_event = self._auto_settle(session, player, tile)
         session.current_phase = "DECISION"
         session.allowed_actions = self._allowed_actions(session)
         return settle_event
 
-    def _auto_settle_v2(self, session: GameSession, player: Player, tile: Tile) -> EventRecord:
+    def _auto_settle(self, session: GameSession, player: Player, tile: Tile) -> EventRecord:
         if tile.tile_type == "PROPERTY" and tile.owner_id and tile.owner_id != player.player_id:
             if player.alliance_with == tile.owner_id:
                 return self._append_event(
@@ -995,30 +509,69 @@ class GameManager:
                     "settlement.applied",
                     {"player_id": player.player_id, "tile_id": tile.tile_id, "type": "toll_waived_by_alliance"},
                 )
+
             toll = tile.toll or 0
             owner = self._find_player(session, tile.owner_id)
             remaining = self._pay_amount(player, toll)
-            owner.cash += toll - remaining
+            if remaining > 0:
+                remaining = self._auction_for_debt(session, player, remaining)
+
+            paid = toll - remaining
+            owner.cash += paid
+
             if remaining > 0:
                 player.alive = False
+                player.alliance_with = None
+                for item in session.players:
+                    if item.alliance_with == player.player_id:
+                        item.alliance_with = None
                 return self._append_event(
                     session,
                     "player.bankrupt",
-                    {"player_id": player.player_id, "debt": remaining, "tile_id": tile.tile_id},
+                    {
+                        "player_id": player.player_id,
+                        "debt": remaining,
+                        "tile_id": tile.tile_id,
+                        "owner_id": owner.player_id,
+                    },
                 )
+
             return self._append_event(
                 session,
                 "settlement.applied",
-                {"player_id": player.player_id, "tile_id": tile.tile_id, "type": "toll_paid", "amount": toll, "owner_id": owner.player_id},
+                {
+                    "player_id": player.player_id,
+                    "tile_id": tile.tile_id,
+                    "type": "toll_paid",
+                    "amount": paid,
+                    "owner_id": owner.player_id,
+                },
             )
 
         if tile.tile_type == "EVENT":
-            delta = session.rng.choice([-200, -100, 100, 200, 300])
+            if tile.event_key in {"EVT_BIG", "EVT_RANDOM"}:
+                return self._append_event(
+                    session,
+                    "settlement.applied",
+                    {
+                        "player_id": player.player_id,
+                        "tile_id": tile.tile_id,
+                        "type": "event_choice_waiting",
+                    },
+                )
+
+            delta = session.rng.choice([-120, -40, 100, 180])
             player.cash = max(0, player.cash + delta)
             return self._append_event(
                 session,
                 "settlement.applied",
-                {"player_id": player.player_id, "tile_id": tile.tile_id, "type": "event_delta", "delta": delta},
+                {
+                    "player_id": player.player_id,
+                    "tile_id": tile.tile_id,
+                    "type": "event_delta",
+                    "delta": delta,
+                    "cash": player.cash,
+                },
             )
 
         if tile.tile_type == "BANK":
@@ -1056,16 +609,64 @@ class GameManager:
         player.deposit = 0
         return remaining
 
+    def _auction_for_debt(self, session: GameSession, debtor: Player, debt: int) -> int:
+        if debt <= 0:
+            return 0
+
+        for tile_id in list(debtor.property_ids):
+            tile = self._find_tile(session, tile_id)
+            reserve = max(100, tile.property_price or 200)
+            buyers = [
+                item
+                for item in session.players
+                if item.player_id != debtor.player_id and item.alive and item.cash >= reserve
+            ]
+            if not buyers:
+                continue
+            buyers.sort(key=lambda item: item.cash, reverse=True)
+            buyer = buyers[0]
+
+            buyer.cash -= reserve
+            debtor.cash += reserve
+            tile.owner_id = buyer.player_id
+            debtor.property_ids.remove(tile.tile_id)
+            if tile.tile_id not in buyer.property_ids:
+                buyer.property_ids.append(tile.tile_id)
+
+            self._append_event(
+                session,
+                "auction.sold",
+                {
+                    "tile_id": tile.tile_id,
+                    "from_player_id": debtor.player_id,
+                    "to_player_id": buyer.player_id,
+                    "price": reserve,
+                },
+            )
+
+            pay_now = min(debtor.cash, debt)
+            debtor.cash -= pay_now
+            debt -= pay_now
+            if debt <= 0:
+                return 0
+
+        return debt
+
     def _allowed_actions(self, session: GameSession) -> list[ActionOption]:
         player = session.players[session.current_player_index]
+        if not player.alive:
+            return [ActionOption(action="pass", description="Pass")]
+
         if session.current_phase == "ROLL":
             return [ActionOption(action="roll_dice", description="Roll dice", required_args=[])]
+
         if session.current_phase != "DECISION":
             return [ActionOption(action="pass", description="Pass", required_args=[])]
 
         tile = session.board[session.active_tile_index]
         subtype = resolve_tile_subtype(tile, player)
         options: list[ActionOption] = []
+
         if subtype == "PROPERTY_UNOWNED":
             options.append(
                 ActionOption(
@@ -1077,6 +678,17 @@ class GameManager:
                 )
             )
             options.append(ActionOption(action="skip_buy", description="Skip buy"))
+
+        if subtype == "PROPERTY_SELF":
+            options.append(
+                ActionOption(
+                    action="upgrade_property",
+                    description="Upgrade property",
+                    required_args=["tile_id"],
+                    allowed_values={"tile_id": [tile.tile_id]},
+                    default_args={"tile_id": tile.tile_id},
+                )
+            )
 
         if subtype == "BANK":
             max_deposit = max((player.cash // 100) * 100, 0)
@@ -1102,8 +714,23 @@ class GameManager:
                     )
                 )
 
-        target_players = [item.player_id for item in session.players if item.player_id != player.player_id and item.alive and item.alliance_with is None]
-        if target_players and player.alliance_with is None and session.current_phase == "DECISION":
+        if subtype == "EVENT" and tile.event_key in {"EVT_BIG", "EVT_RANDOM"}:
+            options.append(
+                ActionOption(
+                    action="event_choice",
+                    description="Choose event option",
+                    required_args=["choice"],
+                    allowed_values={"choice": ["safe", "risky"]},
+                    default_args={"choice": "safe"},
+                )
+            )
+
+        target_players = [
+            item.player_id
+            for item in session.players
+            if item.player_id != player.player_id and item.alive and item.alliance_with is None
+        ]
+        if target_players and player.alliance_with is None:
             options.append(
                 ActionOption(
                     action="propose_alliance",
@@ -1111,6 +738,31 @@ class GameManager:
                     required_args=["target_player_id"],
                     allowed_values={"target_player_id": target_players},
                     default_args={"target_player_id": target_players[0]},
+                )
+            )
+
+        incoming = [
+            requester_id
+            for requester_id, target_id in session.pending_alliances
+            if target_id == player.player_id
+        ]
+        if incoming and player.alliance_with is None:
+            options.append(
+                ActionOption(
+                    action="accept_alliance",
+                    description="Accept alliance request",
+                    required_args=["requester_player_id"],
+                    allowed_values={"requester_player_id": sorted(incoming)},
+                    default_args={"requester_player_id": sorted(incoming)[0]},
+                )
+            )
+            options.append(
+                ActionOption(
+                    action="reject_alliance",
+                    description="Reject alliance request",
+                    required_args=["requester_player_id"],
+                    allowed_values={"requester_player_id": sorted(incoming)},
+                    default_args={"requester_player_id": sorted(incoming)[0]},
                 )
             )
 
@@ -1176,23 +828,6 @@ class GameManager:
             alive=player.alive,
         )
 
-    def build_players_snapshot(self, session: GameSession) -> list[PlayerSnapshot]:
-        return [self._to_player_snapshot(session, item) for item in session.players]
-
-    def build_board_snapshot(self, session: GameSession) -> list[BoardTileSnapshot]:
-        return [
-            BoardTileSnapshot(
-                tile_id=item.tile_id,
-                tile_index=item.tile_index,
-                tile_type=item.tile_type,
-                tile_subtype=item.tile_subtype,
-                owner_id=item.owner_id,
-                property_price=item.property_price,
-                toll=item.toll,
-            )
-            for item in session.board
-        ]
-
     def _find_player(self, session: GameSession, player_id: str) -> Player:
         for item in session.players:
             if item.player_id == player_id:
@@ -1206,7 +841,14 @@ class GameManager:
         raise KeyError(f"unknown tile: {tile_id}")
 
     def _winner_id(self, session: GameSession) -> str | None:
-        scores = sorted(((self._to_player_snapshot(session, item).net_worth, item.player_id) for item in session.players if item.alive), reverse=True)
+        scores = sorted(
+            (
+                (self._to_player_snapshot(session, item).net_worth, item.player_id)
+                for item in session.players
+                if item.alive
+            ),
+            reverse=True,
+        )
         return scores[0][1] if scores else None
 
     def _append_event(self, session: GameSession, event_type: str, payload: dict[str, Any]) -> EventRecord:

@@ -1,19 +1,41 @@
 import concurrent.futures
 import unittest
 
-from app.game_engine import initialize_game_state, run_game_turn
-from app.schemas import ActionCommand, ActionType
+from app.game_engine import GameManager
+from app.schemas import PlayerConfig
 
 
 def _run_one_game(game_idx: int) -> dict:
-    state = initialize_game_state(
-        game_id=f"g-conc-{game_idx}",
-        player_ids=["p1", "p2", "p3", "p4"],
+    manager = GameManager()
+    game_id = f"g-conc-{game_idx}"
+    manager.create_game(
+        game_id=game_id,
+        max_rounds=20,
+        seed=game_idx + 11,
+        players=[
+            PlayerConfig(player_id="p1", name="A", is_agent=True),
+            PlayerConfig(player_id="p2", name="B", is_agent=True),
+            PlayerConfig(player_id="p3", name="C", is_agent=True),
+            PlayerConfig(player_id="p4", name="D", is_agent=True),
+        ],
     )
-    for _ in range(25):
-        for pid in list(state["player_order"]):
-            run_game_turn(state, pid, ActionCommand(action=ActionType.PASS))
-    return {"round_index": state["round_index"], "alive_count": sum(1 for p in state["players"].values() if p["alive"])}
+
+    for _ in range(120):
+        state = manager.state(game_id)
+        if state.status == "finished":
+            break
+        current = state.current_player_id
+        if state.current_phase == "ROLL":
+            manager.apply_action(game_id, current, "roll_dice", {})
+            continue
+
+        state = manager.state(game_id)
+        if state.current_phase == "DECISION":
+            manager.apply_action(game_id, current, "pass", {})
+
+    result = manager.state(game_id)
+    alive = sum(1 for item in result.players if item.alive)
+    return {"round_index": result.round_index, "alive_count": alive}
 
 
 class ConcurrencySimulationTestCase(unittest.TestCase):

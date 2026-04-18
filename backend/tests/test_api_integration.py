@@ -1,77 +1,111 @@
 import json
 import unittest
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from sqlmodel import delete
 
-from app.db import create_db_and_tables, get_session
 from app.main import app
-from app.models import Action, Alliance, EventLog, Game, GameSnapshot, IdempotencyRecord, Player, Property
 
 
 class ApiIntegrationTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        create_db_and_tables()
         cls.client = TestClient(app)
 
-    def setUp(self) -> None:
-        with get_session() as session:
-            session.exec(delete(IdempotencyRecord))
-            session.exec(delete(Action))
-            session.exec(delete(EventLog))
-            session.exec(delete(GameSnapshot))
-            session.exec(delete(Alliance))
-            session.exec(delete(Property))
-            session.exec(delete(Player))
-            session.exec(delete(Game))
-            session.commit()
-
-    def test_start_turn_state_replay_flow(self) -> None:
-        start_resp = self.client.post(
-            "/games/start",
-            json={"game_id": "g-int-1", "player_ids": ["p1", "p2", "p3"], "start_cash": 1000},
+    def _create_game(self, game_id: str) -> None:
+        response = self.client.post(
+            "/games",
+            json={
+                "game_id": game_id,
+                "max_rounds": 12,
+                "seed": 2,
+                "players": [
+                    {"player_id": "p1", "name": "Human", "is_agent": False},
+                    {"player_id": "p2", "name": "Bot-2", "is_agent": True},
+                    {"player_id": "p3", "name": "Bot-3", "is_agent": True},
+                    {"player_id": "p4", "name": "Bot-4", "is_agent": True},
+                ],
+            },
         )
-        self.assertEqual(start_resp.status_code, 200)
+        self.assertEqual(response.status_code, 200)
 
-        turn_resp = self.client.post(
-            "/games/g-int-1/turn",
-            json={"player_id": "p1", "action": "pass", "params": {}, "dice_value": 1},
+    def test_v2_state_replay_summary_flow(self) -> None:
+        game_id = f"g-int-{uuid4().hex[:8]}"
+        self._create_game(game_id)
+
+        roll = self.client.post(
+            f"/games/{game_id}/actions",
+            json={
+                "game_id": game_id,
+                "player_id": "p1",
+                "action": "roll_dice",
+                "args": {},
+            },
         )
-        self.assertEqual(turn_resp.status_code, 200)
-        body = turn_resp.json()
-        self.assertIn("events", body)
-        self.assertGreater(len(body["events"]), 0)
+        self.assertEqual(roll.status_code, 200)
+        self.assertTrue(roll.json()["accepted"])
 
-        state_resp = self.client.get("/games/g-int-1/state")
+        choose = self.client.post(
+            f"/games/{game_id}/actions",
+            json={
+                "game_id": game_id,
+                "player_id": "p1",
+                "action": "buy_property",
+                "args": {"tile_id": "T01"},
+            },
+        )
+        self.assertEqual(choose.status_code, 200)
+        self.assertTrue(choose.json()["accepted"])
+
+        auto = self.client.post(f"/games/{game_id}/auto-play?max_steps=10")
+        self.assertEqual(auto.status_code, 200)
+        auto_body = auto.json()
+        self.assertIn("steps", auto_body)
+        self.assertIn("state", auto_body)
+        self.assertIn("stopped_reason", auto_body)
+
+        state_resp = self.client.get(f"/games/{game_id}/state")
         self.assertEqual(state_resp.status_code, 200)
-        self.assertIn("players", state_resp.json())
+        self.assertIn("state", state_resp.json())
 
-        replay_resp = self.client.get("/games/g-int-1/replay")
+        replay_resp = self.client.get(f"/games/{game_id}/replay")
         self.assertEqual(replay_resp.status_code, 200)
-        self.assertGreater(replay_resp.json()["count"], 0)
+        replay_body = replay_resp.json()
+        self.assertIn("steps", replay_body)
 
-        export_resp = self.client.get("/games/g-int-1/replay/export")
+        summary_resp = self.client.get(f"/games/{game_id}/summary")
+        self.assertEqual(summary_resp.status_code, 200)
+        summary = summary_resp.json()
+        self.assertIn("metrics", summary)
+        self.assertIn("markdown", summary)
+
+        export_resp = self.client.get(f"/games/{game_id}/replay/export")
         self.assertEqual(export_resp.status_code, 200)
         lines = [line for line in export_resp.text.splitlines() if line.strip()]
         self.assertGreater(len(lines), 0)
         first = json.loads(lines[0])
-        self.assertIn("event_type", first)
+        self.assertIn("type", first)
 
-    def test_turn_idempotency(self) -> None:
-        self.client.post("/games/start", json={"game_id": "g-int-2", "player_ids": ["p1", "p2"]})
-        payload = {
-            "player_id": "p1",
-            "action": "pass",
-            "params": {},
-            "dice_value": 2,
-            "idempotency_key": "k1",
-        }
-        r1 = self.client.post("/games/g-int-2/turn", json=payload)
-        r2 = self.client.post("/games/g-int-2/turn", json=payload)
-        self.assertEqual(r1.status_code, 200)
-        self.assertEqual(r2.status_code, 200)
-        self.assertEqual(r1.json(), r2.json())
+    def test_auto_play_stops_on_human_turn(self) -> None:
+        game_id = f"g-auto-{uuid4().hex[:8]}"
+        self._create_game(game_id)
+
+        self.client.post(
+            f"/games/{game_id}/actions",
+            json={"game_id": game_id, "player_id": "p1", "action": "roll_dice", "args": {}},
+        )
+        self.client.post(
+            f"/games/{game_id}/actions",
+            json={"game_id": game_id, "player_id": "p1", "action": "pass", "args": {}},
+        )
+
+        auto = self.client.post(f"/games/{game_id}/auto-play?max_steps=20")
+        self.assertEqual(auto.status_code, 200)
+        body = auto.json()
+        self.assertGreaterEqual(body["steps"], 1)
+        self.assertIn(body["stopped_reason"], {"human_turn", "game_finished", "max_steps"})
+        if body["stopped_reason"] == "human_turn":
+            self.assertEqual(body["state"]["current_player_id"], "p1")
 
 
 if __name__ == "__main__":

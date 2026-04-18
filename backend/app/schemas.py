@@ -6,10 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-TURN_INPUT_VERSION = "DY-MONO-TURN-IN/3.1"
-TURN_OUTPUT_VERSION = "DY-MONO-TURN-OUT/3.1"
-TURN_IN_PROTOCOL = "DY-MONO-TURN-IN/3.1"
-TURN_OUT_PROTOCOL = "DY-MONO-TURN-OUT/3.1"
+TURN_IN_PROTOCOL: Literal["DY-MONO-TURN-IN/3.1"] = "DY-MONO-TURN-IN/3.1"
+TURN_OUT_PROTOCOL: Literal["DY-MONO-TURN-OUT/3.1"] = "DY-MONO-TURN-OUT/3.1"
 TURN_PHASE_CHAIN: tuple[str, ...] = (
     "ROLL",
     "TILE_ENTER",
@@ -52,131 +50,34 @@ class ActionType(str, Enum):
 
 
 class ErrorCode(str, Enum):
-    ILLEGAL_PHASE_TRANSITION = "ILLEGAL_PHASE_TRANSITION"
-    ILLEGAL_ACTION_FOR_PHASE = "ILLEGAL_ACTION_FOR_PHASE"
     ILLEGAL_ACTION = "ILLEGAL_ACTION"
     INVALID_PARAMS = "INVALID_PARAMS"
     INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
     RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
 
 
-class ActionCommand(BaseModel):
-    action: ActionType
-    params: dict = Field(default_factory=dict)
-
-
-class DecisionOptions(BaseModel):
-    phase: Phase
-    allowed_actions: list[ActionType]
-
-
 class OutputContract(BaseModel):
-    # Legacy engine fields
     accepted: bool = True
     fallback_used: bool = False
     error_code: ErrorCode | None = None
     message: str = ""
-    # Agent runtime fields
-    protocol: Literal["DY-MONO-TURN-OUT/3.1"] = "DY-MONO-TURN-OUT/3.1"
+    protocol: Literal["DY-MONO-TURN-OUT/3.1"] = TURN_OUT_PROTOCOL
     json_only: bool = True
     required_fields: list[str] = Field(default_factory=lambda: ["protocol", "action", "args"])
     reject_extra_fields: bool = True
 
 
-class EventEnvelope(BaseModel):
-    event_id: str
-    game_id: str
-    round_index: int
-    turn_id: str
-    phase: Phase
-    event_type: str
-    ts: float
-    payload: dict = Field(default_factory=dict)
-
-
 class PlayerSnapshot(BaseModel):
     player_id: str
-    # Phase-B runtime fields
     name: str = ""
     is_agent: bool = True
     net_worth: int = 0
     property_ids: list[str] = Field(default_factory=list)
     alliance_with: str | None = None
-    # Legacy engine fields
     position: int = 0
     cash: int = 1000
     deposit: int = 0
     alive: bool = True
-
-
-class GameSnapshot(BaseModel):
-    game_id: str
-    round_index: int
-    current_player_id: str
-    phase: Phase
-    tile_type: TileType = TileType.EMPTY
-    players: list[PlayerSnapshot] = Field(default_factory=list)
-
-
-class TurnInputV31(BaseModel):
-    protocol_version: str = TURN_INPUT_VERSION
-    game_id: str
-    player_id: str
-    turn_id: str = "turn-0"
-    round_index: int = 1
-    phase: Phase
-    tile_type: TileType = TileType.EMPTY
-    command: ActionCommand | None = None
-
-
-class TurnOutputV31(BaseModel):
-    protocol_version: str = TURN_OUTPUT_VERSION
-    game_id: str
-    player_id: str
-    turn_id: str
-    round_index: int
-    phase: Phase
-    next_phase: Phase | None = None
-    decision_options: DecisionOptions | None = None
-    output_contract: OutputContract
-    events: list[EventEnvelope] = Field(default_factory=list)
-    snapshot: GameSnapshot
-
-
-class ActionRequest(BaseModel):
-    game_id: str
-    player_id: str
-    phase: Phase = Phase.DECISION
-    action: ActionType | str
-    params: dict = Field(default_factory=dict)
-    args: dict[str, Any] = Field(default_factory=dict)
-
-
-class ActionResponse(BaseModel):
-    accepted: bool
-    message: str
-    error_code: ErrorCode | None = None
-    state: GameState | None = None
-    event: EventRecord | None = None
-    audit: DecisionAudit | None = None
-
-
-class CreateGameRequest(BaseModel):
-    game_id: str
-    player_ids: list[str] = Field(default_factory=list)
-    players: list[PlayerConfig] = Field(default_factory=list)
-    start_cash: int = 1000
-    start_deposit: int = 0
-    max_rounds: int = Field(default=20, ge=1, le=200)
-    seed: int = 20260418
-
-
-class PlayTurnRequest(BaseModel):
-    player_id: str
-    action: ActionType = ActionType.PASS
-    params: dict = Field(default_factory=dict)
-    dice_value: int | None = None
-    idempotency_key: str | None = None
 
 
 class StrictModel(BaseModel):
@@ -229,7 +130,7 @@ class BoardSnapshot(StrictModel):
 
 
 class TurnInput(StrictModel):
-    protocol: Literal["DY-MONO-TURN-IN/3.1"] = "DY-MONO-TURN-IN/3.1"
+    protocol: Literal["DY-MONO-TURN-IN/3.1"] = TURN_IN_PROTOCOL
     turn_meta: TurnMeta
     tile_context: TileContext
     player_state: PlayerSnapshot
@@ -244,7 +145,7 @@ class TurnInput(StrictModel):
 
 
 class AgentTurnOutput(StrictModel):
-    protocol: Literal["DY-MONO-TURN-OUT/3.1"] = "DY-MONO-TURN-OUT/3.1"
+    protocol: Literal["DY-MONO-TURN-OUT/3.1"] = TURN_OUT_PROTOCOL
     action: str
     args: dict[str, Any] = Field(default_factory=dict)
     thought: str | None = None
@@ -272,10 +173,20 @@ class AgentDecisionEnvelope(StrictModel):
     audit: DecisionAudit
 
 
+class AgentConfig(StrictModel):
+    provider: str = "openai-compatible"
+    model: str = "qwen/qwen-plus-2025-07-28"
+    base_url: str = "https://openrouter.ai/api/v1"
+    api_key: str = ""
+    timeout_sec: float = Field(default=8, gt=0.5, le=60)
+    max_retries: int = Field(default=2, ge=0, le=5)
+
+
 class PlayerConfig(StrictModel):
     player_id: str
     name: str
     is_agent: bool = True
+    agent_config: AgentConfig | None = None
 
 
 class TriggerAgentRequest(StrictModel):
@@ -317,6 +228,30 @@ class GameState(StrictModel):
     board: list[TileState]
     allowed_actions: list[ActionOption]
     last_events: list[EventRecord]
+
+
+class ActionRequest(BaseModel):
+    game_id: str
+    player_id: str
+    action: ActionType | str
+    args: dict[str, Any] = Field(default_factory=dict)
+
+
+class ActionResponse(BaseModel):
+    accepted: bool
+    message: str
+    error_code: ErrorCode | None = None
+    state: GameState | None = None
+    event: EventRecord | None = None
+    audit: DecisionAudit | None = None
+
+
+class CreateGameRequest(BaseModel):
+    game_id: str
+    room_name: str | None = None
+    players: list[PlayerConfig] = Field(default_factory=list)
+    max_rounds: int = Field(default=20, ge=1, le=200)
+    seed: int = 20260418
 
 
 class ReplayStep(StrictModel):

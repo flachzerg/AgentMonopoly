@@ -7,6 +7,7 @@ type Props = {
   busy: boolean;
   onSubmitAction: (action: string, args: Record<string, unknown>) => Promise<void>;
   onTriggerAgent: () => Promise<void>;
+  onAutoPlayAgents: () => Promise<void>;
 };
 
 function buildInitialArgs(option: ActionOption | undefined): Record<string, unknown> {
@@ -21,6 +22,7 @@ export const ActionPanel: FC<Props> = ({
   busy,
   onSubmitAction,
   onTriggerAgent,
+  onAutoPlayAgents,
 }) => {
   const [selectedAction, setSelectedAction] = useState<string>("");
   const [args, setArgs] = useState<Record<string, unknown>>({});
@@ -127,6 +129,14 @@ export const ActionPanel: FC<Props> = ({
           onClick={() => onTriggerAgent()}
         >
           Agent 决策
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={busy}
+          onClick={() => onAutoPlayAgents()}
+        >
+          AI 自动推进
         </button>
       </div>
       <p className="muted">所有动作均由后端白名单与参数校验判定。</p>
