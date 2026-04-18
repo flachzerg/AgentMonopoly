@@ -1,0 +1,38 @@
+[
+  {
+    "profile": "baseline",
+    "games": 20,
+    "win_rate": 0.6,
+    "avg_total_assets": 3624.2,
+    "bankrupt_rate": 0.0,
+    "illegal_action_rate": 0.0,
+    "fallback_rate": 0.0
+  },
+  {
+    "profile": "property_v1_1",
+    "games": 20,
+    "win_rate": 0.6,
+    "avg_total_assets": 3624.2,
+    "bankrupt_rate": 0.0,
+    "illegal_action_rate": 0.0,
+    "fallback_rate": 0.0
+  },
+  {
+    "profile": "bank_v1_1",
+    "games": 20,
+    "win_rate": 0.6,
+    "avg_total_assets": 3624.2,
+    "bankrupt_rate": 0.0,
+    "illegal_action_rate": 0.0,
+    "fallback_rate": 0.0
+  },
+  {
+    "profile": "event_v1_1",
+    "games": 20,
+    "win_rate": 0.6,
+    "avg_total_assets": 3624.2,
+    "bankrupt_rate": 0.0,
+    "illegal_action_rate": 0.0,
+    "fallback_rate": 0.0
+  }
+]

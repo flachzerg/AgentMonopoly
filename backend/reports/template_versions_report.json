@@ -1,0 +1,122 @@
+[
+  {
+    "template_key": "PROPERTY_UNOWNED_TEMPLATE",
+    "baseline_version": "1.0.0",
+    "challenger_version": "1.1.0",
+    "baseline": {
+      "profile": "PROPERTY_UNOWNED_TEMPLATE:1.0.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "challenger": {
+      "profile": "PROPERTY_UNOWNED_TEMPLATE:1.1.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "delta": {
+      "win_rate": 0.0,
+      "avg_total_assets": 0.0,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    }
+  },
+  {
+    "template_key": "BANK_TEMPLATE",
+    "baseline_version": "1.0.0",
+    "challenger_version": "1.1.0",
+    "baseline": {
+      "profile": "BANK_TEMPLATE:1.0.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "challenger": {
+      "profile": "BANK_TEMPLATE:1.1.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "delta": {
+      "win_rate": 0.0,
+      "avg_total_assets": 0.0,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    }
+  },
+  {
+    "template_key": "EVENT_TEMPLATE",
+    "baseline_version": "1.0.0",
+    "challenger_version": "1.1.0",
+    "baseline": {
+      "profile": "EVENT_TEMPLATE:1.0.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "challenger": {
+      "profile": "EVENT_TEMPLATE:1.1.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "delta": {
+      "win_rate": 0.0,
+      "avg_total_assets": 0.0,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    }
+  },
+  {
+    "template_key": "EMPTY_TEMPLATE",
+    "baseline_version": "1.0.0",
+    "challenger_version": "1.1.0",
+    "baseline": {
+      "profile": "EMPTY_TEMPLATE:1.0.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "challenger": {
+      "profile": "EMPTY_TEMPLATE:1.1.0",
+      "games": 20,
+      "win_rate": 0.6,
+      "avg_total_assets": 3624.2,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    },
+    "delta": {
+      "win_rate": 0.0,
+      "avg_total_assets": 0.0,
+      "bankrupt_rate": 0.0,
+      "illegal_action_rate": 0.0,
+      "fallback_rate": 0.0
+    }
+  }
+]
