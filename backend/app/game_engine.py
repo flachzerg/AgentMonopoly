@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
+from app.map_engine import load_runtime_board
 from app.schemas import (
     ActionOption,
     AgentConfig,
@@ -898,6 +899,27 @@ def template_key_for_tile_subtype(tile_subtype: str) -> str:
 
 
 def build_default_board() -> list[Tile]:
+    try:
+        rows = load_runtime_board()
+        return [
+            Tile(
+                tile_id=item["tile_id"],
+                tile_index=item["tile_index"],
+                tile_type=item["tile_type"],
+                tile_subtype=item["tile_subtype"],
+                name=item["name"],
+                property_price=item.get("property_price"),
+                toll=item.get("toll"),
+                event_key=item.get("event_key"),
+                quiz_key=item.get("quiz_key"),
+            )
+            for item in rows
+        ]
+    except Exception:
+        return _fallback_default_board()
+
+
+def _fallback_default_board() -> list[Tile]:
     return [
         Tile("T00", 0, "START", "START", "Start"),
         Tile("T01", 1, "PROPERTY", "PROPERTY", "Hill Road", property_price=200, toll=40),

@@ -13,6 +13,8 @@
 - AI Provider 已默认接到 OpenRouter（后端读取本地配置文件）
 - 前端无需展示 API Key / base URL，用户仅需选择模型
 - 支持 AI 单步决策与自动推进
+- 地图生成引擎已完成基础能力：`JSON 配置 -> SVG 生成 -> 运行时加载与回退`
+- 当前地图视觉处于工程可用阶段，已具备连线与棋子落点槽位；后续会继续纳入前端美化迭代
 
 ## 技术栈
 
@@ -50,6 +52,15 @@ cd AgentMonopoly
 ```
 
 ### 2) 后端依赖安装
+
+如果你已经有项目根目录下的 `.venv-Hackathon`，可直接复用（推荐黑客松阶段）：
+
+```bash
+# 项目根目录执行
+./.venv-Hackathon/Scripts/python -m pip install -r backend/requirements-dev.txt
+```
+
+如果没有现成环境，再新建：
 
 ```bash
 cd backend
@@ -101,6 +112,12 @@ source .venv/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+Windows + `.venv-Hackathon`（从 `backend` 目录启动）：
+
+```powershell
+..\.venv-Hackathon\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
 后端健康检查：
 
 - [http://localhost:8000/health](http://localhost:8000/health)
@@ -110,12 +127,26 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```bash
 cd frontend
 npm install
-npm run dev -- --host 0.0.0.0 --port 5173
+npx vite --host 0.0.0.0 --port 5173
 ```
 
 打开：
 
 - [http://localhost:5173](http://localhost:5173)
+
+### 6) 启动后 30 秒自检（强烈建议）
+
+```bash
+# 后端健康检查
+curl http://localhost:8000/health
+
+# 前端主页可访问
+curl -I http://localhost:5173/
+```
+
+期望结果：
+- 后端返回 `{"status":"ok"}`
+- 前端返回 `200`
 
 ## 快速体验路径
 
@@ -154,6 +185,8 @@ A:
 - 确认后端在 `8000` 端口运行
 - 确认前端在 `5173` 端口运行
 - 确认前端环境变量 `VITE_API_BASE_URL` 没有指向错误地址
+- Windows 下从 `backend` 目录启动时，注意 Python 路径应是 `..\.venv-Hackathon\Scripts\python.exe`（不是 `.\.venv-Hackathon\...`）
+- 若 `npm run dev -- --host ... --port ...` 未按预期监听端口，直接改用 `npx vite --host 0.0.0.0 --port 5173`
 
 ### Q2: 配置页可以看到模型，但 AI 不行动
 
