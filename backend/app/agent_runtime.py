@@ -77,7 +77,8 @@ class OpenAICompatibleDecisionModel:
                     "role": "system",
                     "content": (
                         "You are a strict decision agent. Always return JSON only. "
-                        f"Protocol must be {output_contract.protocol}."
+                        f"Protocol must be {output_contract.protocol}. "
+                        "You must include a non-empty `thought` string that briefly explains why the chosen action is valid."
                     ),
                 },
                 {"role": "user", "content": prompt},
@@ -349,6 +350,8 @@ def parse_turn_output(raw: str | dict[str, Any], output_contract: OutputContract
     for key, allowed_values in option.allowed_values.items():
         if key in parsed.args and parsed.args[key] not in allowed_values:
             raise IllegalActionError(f"arg value not allowed: {key}")
+    if not parsed.thought.strip():
+        raise OutputParseError("thought must be non-empty")
     return parsed
 
 

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from app.map_engine import load_runtime_board
+from app.map_engine import load_runtime_board, map_asset_from_path, resolve_map_path
 from app.schemas import (
     ActionOption,
     AgentConfig,
@@ -74,6 +74,7 @@ class Tile:
 @dataclass
 class GameSession:
     game_id: str
+    map_asset: str
     max_rounds: int
     rng: random.Random
     players: list[Player]
@@ -95,14 +96,23 @@ class GameManager:
     def __init__(self) -> None:
         self._games: dict[str, GameSession] = {}
 
-    def create_game(self, game_id: str, players: list[PlayerConfig], max_rounds: int, seed: int) -> GameSession:
+    def create_game(
+        self,
+        game_id: str,
+        players: list[PlayerConfig],
+        max_rounds: int,
+        seed: int,
+        map_asset: str | None = None,
+    ) -> GameSession:
         if game_id in self._games:
             raise ValueError(f"game already exists: {game_id}")
         if len(players) < 2:
             raise ValueError("at least two players are required")
+        resolved_map_asset = map_asset_from_path(resolve_map_path(map_asset=map_asset))
 
         session = GameSession(
             game_id=game_id,
+            map_asset=resolved_map_asset,
             max_rounds=max_rounds,
             rng=random.Random(seed),
             players=[
@@ -114,7 +124,7 @@ class GameManager:
                 )
                 for item in players
             ],
-            board=build_default_board(),
+            board=build_default_board(map_asset=resolved_map_asset),
         )
         if session.board:
             start_tile_id = self._start_tile_id(session)
@@ -897,6 +907,7 @@ class GameManager:
         return GameState(
             game_id=session.game_id,
             status=session.status,  # type: ignore[arg-type]
+            map_asset=session.map_asset,
             round_index=session.round_index,
             turn_index=session.turn_index,
             max_rounds=session.max_rounds,
@@ -1064,9 +1075,9 @@ def template_key_for_tile_subtype(tile_subtype: str) -> str:
     return mapping.get(tile_subtype, "EMPTY_TEMPLATE")
 
 
-def build_default_board() -> list[Tile]:
+def build_default_board(map_asset: str | None = None) -> list[Tile]:
     try:
-        rows = load_runtime_board()
+        rows = load_runtime_board(map_asset=map_asset)
         return [
             Tile(
                 tile_id=item["tile_id"],

@@ -12,13 +12,14 @@ type SetupPreviewPanelProps = {
   roomName: string;
   maxPlayers: number;
   maxRounds: number;
-  mapTheme: "default" | "theme2";
+  mapAsset: string;
+  mapAssetLabel: string;
   players: PreviewPlayer[];
 };
 
-export function SetupPreviewPanel({ roomName, maxPlayers, maxRounds, mapTheme, players }: SetupPreviewPanelProps) {
+export function SetupPreviewPanel({ roomName, maxPlayers, maxRounds, mapAsset, mapAssetLabel, players }: SetupPreviewPanelProps) {
   const normalizedRoomName = roomName.trim() || "未命名房间";
-  const mapThemeLabel = mapTheme === "default" ? "default · 经典城市场景" : "theme2 · 霓虹夜行场景";
+  const resolvedLabel = mapAssetLabel.trim() ? mapAssetLabel : mapAsset;
 
   return (
     <aside className="panel preview-stack">
@@ -41,7 +42,7 @@ export function SetupPreviewPanel({ roomName, maxPlayers, maxRounds, mapTheme, p
 
       <div className="preview-block">
         <p className="preview-label">地图主题</p>
-        <p className="preview-value">{mapThemeLabel}</p>
+        <p className="preview-value">{resolvedLabel}</p>
       </div>
 
       <div className="preview-block">

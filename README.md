@@ -13,12 +13,14 @@
 - AI Provider 已默认接到 OpenRouter（后端读取本地配置文件）
 - 前端无需展示 API Key / base URL，用户仅需选择模型
 - 支持 AI 单步决策与自动推进
-- 已支持 Agent `thought` 伪流式输出（方式 A）：模型先返回完整 JSON，再通过 WebSocket 分片广播 thought
+- 已支持 Agent `thought` 伪流式输出（方式 A）：模型先返回完整 JSON，再通过 WebSocket 分片广播 `agent.thought.delta / agent.thought.done`
+- Agent 输出合同已强制要求 `thought` 非空，思维群聊默认可稳定展示思考文本（不再以 `raw=...` 作为主展示）
 - 对局页已接入 Agent 思维群聊视图：不同 Agent 固定头像 + 聊天气泡流式展示
 - 地图生成引擎与数据结构已完成“分支地图”改造：
   - 数据模型：支持通过 `next_tile_ids` 定义任意有向图，兼容原有单环运行逻辑，新增前方分支路径预测。
   - 视觉升级：自适应等分点贝塞尔（Cubic Bezier）平滑连线，正方形 100x100 地块完美居中文字，拥有者状态颜色区分，棋子四角分布。
   - 多样化内置地图：包含大单环、多分支、复杂交叉网络以及专为展示对称曲线之美设计的 `bezier_showcase` 地图。
+- 地图链路已全打通：`Setup` 下拉读取后端地图清单，建局请求传入 `map_asset`，后端按地图构建棋盘并在 `state.map_asset` 回传给前端渲染层。
 
 ## 技术栈
 
@@ -125,6 +127,10 @@ Windows + `.venv-Hackathon`（从 `backend` 目录启动）：
 后端健康检查：
 
 - [http://localhost:8000/health](http://localhost:8000/health)
+
+地图选项接口（供前端配置页读取）：
+
+- [http://localhost:8000/games/map-options](http://localhost:8000/games/map-options)
 
 ### 5) 启动前端（新终端）
 

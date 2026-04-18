@@ -6,7 +6,7 @@ import { SetupPreviewPanel } from "../components/SetupPreviewPanel";
 import { inferModelTag, saveGamePlayerProfiles } from "../lib/modelAvatar";
 import { gamesApi } from "../services/api";
 import { useGameStore } from "../store/gameStore";
-import type { AgentOptions, CreateGameRequest } from "../types/game";
+import type { AgentOptions, CreateGameRequest, MapOptions } from "../types/game";
 
 type PlayerDraft = {
   player_id: string;
@@ -28,6 +28,17 @@ const FALLBACK_MODELS = [
   "deepseek/deepseek-r1",
 ];
 
+const MAP_ASSET_LABELS: Record<string, string> = {
+  default: "default · 经典城市场景",
+  theme2: "theme2 · 霓虹夜行场景",
+  "01_basic_loop": "01_basic_loop · 16格基础环形",
+  "02_basic_branch": "02_basic_branch · 18格基础分支",
+  "03_large_loop": "03_large_loop · 24格大型环形",
+  "04_large_branch": "04_large_branch · 28格大型分支",
+  "05_complex_branch": "05_complex_branch · 36格复杂分支",
+  "06_bezier_showcase": "06_bezier_showcase · 贝塞尔演示图",
+};
+
 function createDefaultPlayers(maxPlayers: number, model: string): PlayerDraft[] {
   return Array.from({ length: maxPlayers }, (_, index) => ({
     player_id: `p${index + 1}`,
@@ -45,7 +56,8 @@ export default function SetupPage() {
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [maxRounds, setMaxRounds] = useState(20);
   const [seed, setSeed] = useState(20260418);
-  const [mapTheme, setMapTheme] = useState<"default" | "theme2">("default");
+  const [mapOptions, setMapOptions] = useState<MapOptions | null>(null);
+  const [mapAsset, setMapAsset] = useState("default");
   const [formError, setFormError] = useState<string>("");
   const [agentOptions, setAgentOptions] = useState<AgentOptions | null>(null);
   const [players, setPlayers] = useState<PlayerDraft[]>([]);
@@ -58,17 +70,39 @@ export default function SetupPage() {
   }, [agentOptions]);
 
   const defaultModel = models[0] ?? "qwen/qwen-plus-2025-07-28";
+  const availableMapAssets = mapOptions?.map_assets?.length ? mapOptions.map_assets : ["default", "theme2"];
+
+  const mapAssetLabel = useMemo(() => {
+    return MAP_ASSET_LABELS[mapAsset] ?? mapAsset;
+  }, [mapAsset]);
 
   useEffect(() => {
     void (async () => {
       try {
-        const options = await gamesApi.getAgentOptions();
-        setAgentOptions(options);
+        const [agentOpts, mapOpts] = await Promise.all([gamesApi.getAgentOptions(), gamesApi.getMapOptions()]);
+        setAgentOptions(agentOpts);
+        setMapOptions(mapOpts);
+        const defaultAsset = mapOpts.default_map_asset || "default";
+        const storedAsset = localStorage.getItem("am-map-theme") || "";
+        const preferredAsset = (storedAsset && mapOpts.map_assets.includes(storedAsset) ? storedAsset : defaultAsset).trim();
+        if (preferredAsset) {
+          setMapAsset(preferredAsset);
+        }
       } catch {
         setAgentOptions(null);
+        setMapOptions(null);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (availableMapAssets.length === 0) {
+      return;
+    }
+    if (!availableMapAssets.includes(mapAsset)) {
+      setMapAsset(availableMapAssets[0]);
+    }
+  }, [availableMapAssets, mapAsset]);
 
   useEffect(() => {
     setPlayers((current) => {
@@ -122,7 +156,7 @@ export default function SetupPage() {
       return;
     }
     setFormError("");
-    const payload: CreateGameRequest & { map_theme?: string } = {
+    const payload: CreateGameRequest = {
       game_id: normalizedName.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5-_]+/g, "-") || `room-${Date.now()}`,
       room_name: normalizedName,
       players: players.map((item) => ({
@@ -137,7 +171,7 @@ export default function SetupPage() {
       })),
       max_rounds: maxRounds,
       seed,
-      map_theme: mapTheme,
+      map_asset: mapAsset,
     };
 
     saveGamePlayerProfiles(
@@ -151,7 +185,7 @@ export default function SetupPage() {
     );
 
     setRoomName(normalizedName);
-    localStorage.setItem("am-map-theme", mapTheme);
+    localStorage.setItem("am-map-theme", mapAsset);
     const gameId = await createAndLoadGame(payload);
     if (gameId) {
       if (gameId !== payload.game_id) {
@@ -185,7 +219,7 @@ export default function SetupPage() {
             <span>回合上限</span>
           </div>
           <div>
-            <strong>{mapTheme === "default" ? "经典城市场景" : "霓虹夜行场景"}</strong>
+            <strong>{mapAssetLabel}</strong>
             <span>地图主题</span>
           </div>
         </div>
@@ -229,9 +263,12 @@ export default function SetupPage() {
               </label>
               <label className="field">
                 <span>地图主题（仅 UI 与参数透传）</span>
-                <select value={mapTheme} onChange={(e) => setMapTheme(e.target.value as "default" | "theme2")}>
-                  <option value="default">default · 经典城市场景</option>
-                  <option value="theme2">theme2 · 霓虹夜行场景</option>
+                <select value={mapAsset} onChange={(e) => setMapAsset(e.target.value)}>
+                  {availableMapAssets.map((asset) => (
+                    <option key={asset} value={asset}>
+                      {MAP_ASSET_LABELS[asset] ?? asset}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -315,7 +352,14 @@ export default function SetupPage() {
           </section>
         </form>
 
-        <SetupPreviewPanel roomName={roomName} maxPlayers={maxPlayers} maxRounds={maxRounds} mapTheme={mapTheme} players={players} />
+        <SetupPreviewPanel
+          roomName={roomName}
+          maxPlayers={maxPlayers}
+          maxRounds={maxRounds}
+          mapAsset={mapAsset}
+          mapAssetLabel={mapAssetLabel}
+          players={players}
+        />
       </div>
     </div>
   );

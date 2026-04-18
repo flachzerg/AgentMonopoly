@@ -64,7 +64,7 @@ class OutputContract(BaseModel):
     message: str = ""
     protocol: Literal["DY-MONO-TURN-OUT/3.1"] = TURN_OUT_PROTOCOL
     json_only: bool = True
-    required_fields: list[str] = Field(default_factory=lambda: ["protocol", "action", "args"])
+    required_fields: list[str] = Field(default_factory=lambda: ["protocol", "action", "args", "thought"])
     reject_extra_fields: bool = True
 
 
@@ -169,7 +169,7 @@ class AgentTurnOutput(StrictModel):
     protocol: Literal["DY-MONO-TURN-OUT/3.1"] = TURN_OUT_PROTOCOL
     action: str
     args: dict[str, Any] = Field(default_factory=dict)
-    thought: str | None = None
+    thought: str = Field(min_length=1, max_length=2000)
     strategy_tags: list[str] = Field(default_factory=list)
     candidate_actions: list[str] = Field(default_factory=list)
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
@@ -240,6 +240,7 @@ class TileState(StrictModel):
 class GameState(StrictModel):
     game_id: str
     status: Literal["waiting", "running", "finished"]
+    map_asset: str | None = None
     round_index: int
     turn_index: int
     max_rounds: int
@@ -274,6 +275,8 @@ class ActionResponse(BaseModel):
 class CreateGameRequest(BaseModel):
     game_id: str
     room_name: str | None = None
+    map_asset: str | None = None
+    map_theme: str | None = None
     players: list[PlayerConfig] = Field(default_factory=list)
     max_rounds: int = Field(default=20, ge=1, le=200)
     seed: int = 20260418

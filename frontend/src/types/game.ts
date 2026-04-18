@@ -58,7 +58,7 @@ export type DecisionAudit = {
     protocol: string;
     action: string;
     args: Record<string, unknown>;
-    thought: string | null;
+    thought: string;
     strategy_tags: string[];
     candidate_actions: string[];
     confidence: number | null;
@@ -149,6 +149,7 @@ export type WsStateSyncPayload = {
 export type CreateGameRequest = {
   game_id: string;
   room_name?: string;
+  map_asset?: string;
   map_theme?: string;
   players: Array<{
     player_id: string;

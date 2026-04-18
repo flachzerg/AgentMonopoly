@@ -1,5 +1,7 @@
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import re
 from typing import Any
 from uuid import uuid4
 
@@ -9,6 +11,7 @@ from fastapi.responses import PlainTextResponse
 from app.agent_runtime import AgentRuntime, RuntimeConfig, TurnBuildInput
 from app.core.agent_options import load_agent_options
 from app.game_engine import GameManager
+from app.map_engine import default_map_path, list_map_paths, map_asset_from_path
 from app.model_experience import ModelExperienceStore, build_experience_summary
 from app.observability import log_json, metrics
 from app.replay_summary import build_replay_export
@@ -41,6 +44,87 @@ class AutoAdvanceResult:
     steps: int
     stopped_reason: str
     audits: list[dict[str, Any]]
+
+
+def _map_assets_catalog() -> tuple[list[str], str]:
+    assets = [map_asset_from_path(path) for path in list_map_paths()]
+    default_asset = map_asset_from_path(default_map_path())
+    if default_asset not in assets:
+        assets = [default_asset, *assets]
+    return assets, default_asset
+
+
+def _split_thought_chunks(thought: str, max_chunk_len: int = 28) -> list[str]:
+    if max_chunk_len < 1:
+        raise ValueError("max_chunk_len must be positive")
+    if not thought:
+        return []
+    text = thought.strip()
+    if not text:
+        return []
+
+    chunks: list[str] = []
+    segments = re.split(r"([，。！？；,.!?;])", text)
+    cursor = ""
+    for segment in segments:
+        if not segment:
+            continue
+        piece = f"{cursor}{segment}"
+        if len(piece) <= max_chunk_len:
+            cursor = piece
+            continue
+        if cursor:
+            chunks.append(cursor)
+            cursor = ""
+        for idx in range(0, len(segment), max_chunk_len):
+            part = segment[idx : idx + max_chunk_len]
+            if len(part) == max_chunk_len:
+                chunks.append(part)
+            else:
+                cursor = part
+    if cursor:
+        chunks.append(cursor)
+    return chunks if chunks else [text]
+
+
+async def _broadcast_thought_pseudo_stream(
+    game_id: str,
+    player_id: str,
+    player_name: str,
+    turn_index: int,
+    thought: str,
+) -> None:
+    chunks = _split_thought_chunks(thought)
+    if not chunks:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    for seq, delta in enumerate(chunks, start=1):
+        await ws_manager.broadcast(
+            game_id,
+            {
+                "type": "agent.thought.delta",
+                "game_id": game_id,
+                "player_id": player_id,
+                "player_name": player_name,
+                "turn_index": turn_index,
+                "seq": seq,
+                "delta": delta,
+                "ts": now,
+            },
+        )
+    await ws_manager.broadcast(
+        game_id,
+        {
+            "type": "agent.thought.done",
+            "game_id": game_id,
+            "player_id": player_id,
+            "player_name": player_name,
+            "turn_index": turn_index,
+            "is_final": True,
+            "full_text": thought,
+            "ts": now,
+        },
+    )
 
 
 def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
@@ -252,6 +336,16 @@ async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_hu
     runtime = _runtime_for_player(game_id, player_id)
     turn_input = _build_turn_input_v2(game_id, runtime)
     envelope = runtime.decide(turn_input)
+    session = _manager.get_game(game_id)
+    player = next((item for item in session.players if item.player_id == player_id), None)
+    player_name = player.name if player else player_id
+    await _broadcast_thought_pseudo_stream(
+        game_id=game_id,
+        player_id=player_id,
+        player_name=player_name,
+        turn_index=turn_input.turn_meta.turn_index,
+        thought=envelope.decision.thought,
+    )
     accepted, message, event = _manager.apply_action(
         game_id=game_id,
         player_id=player_id,
@@ -322,8 +416,9 @@ async def create_game_v2(payload: CreateGameRequest) -> dict[str, Any]:
     if not game_id:
         room_hint = (payload.room_name or "room").strip().replace(" ", "-").lower()
         game_id = f"{room_hint}-{uuid4().hex[:8]}"
+    requested_map_asset = (payload.map_asset or payload.map_theme or "").strip() or None
     try:
-        session = _manager.create_game(game_id, payload.players, payload.max_rounds, payload.seed)
+        session = _manager.create_game(game_id, payload.players, payload.max_rounds, payload.seed, map_asset=requested_map_asset)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -342,6 +437,15 @@ async def create_game_v2(payload: CreateGameRequest) -> dict[str, Any]:
 @router.get("", response_model=dict)
 def list_games_v2() -> dict[str, Any]:
     return {"games": _manager.list_games()}
+
+
+@router.get("/map-options", response_model=dict)
+def get_map_options() -> dict[str, Any]:
+    map_assets, default_asset = _map_assets_catalog()
+    return {
+        "map_assets": map_assets,
+        "default_map_asset": default_asset,
+    }
 
 
 @router.get("/{game_id}/state", response_model=dict)

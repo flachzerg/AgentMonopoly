@@ -132,6 +132,32 @@ class ApiIntegrationTestCase(unittest.TestCase):
         self.assertIn("records", model_body)
         self.assertGreaterEqual(len(model_body["records"]), 1)
 
+    def test_map_options_and_map_asset_passthrough(self) -> None:
+        options = self.client.get("/games/map-options")
+        self.assertEqual(options.status_code, 200)
+        body = options.json()
+        self.assertIn("map_assets", body)
+        self.assertIn("default_map_asset", body)
+        self.assertIn("05_complex_branch", body["map_assets"])
+
+        game_id = f"g-map-{uuid4().hex[:8]}"
+        created = self.client.post(
+            "/games",
+            json={
+                "game_id": game_id,
+                "max_rounds": 8,
+                "seed": 42,
+                "map_asset": "05_complex_branch",
+                "players": [
+                    {"player_id": "p1", "name": "P1", "is_agent": False},
+                    {"player_id": "p2", "name": "P2", "is_agent": True},
+                ],
+            },
+        )
+        self.assertEqual(created.status_code, 200)
+        created_state = created.json()["state"]
+        self.assertEqual(created_state["map_asset"], "05_complex_branch")
+
 
 if __name__ == "__main__":
     unittest.main()
