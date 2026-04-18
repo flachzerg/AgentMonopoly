@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ModelAvatar } from "../components/ModelAvatar";
-import { SetupPreviewPanel } from "../components/SetupPreviewPanel";
-import { inferModelTag, saveGamePlayerProfiles } from "../lib/modelAvatar";
+import { saveGamePlayerProfiles } from "../lib/modelAvatar";
 import { gamesApi } from "../services/api";
 import { useGameStore } from "../store/gameStore";
 import type { AgentOptions, CreateGameRequest, MapOptions } from "../types/game";
@@ -55,12 +54,12 @@ export default function SetupPage() {
   const [roomName, setRoomNameInput] = useState("开放体验房");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [maxRounds, setMaxRounds] = useState(20);
-  const [seed, setSeed] = useState(20260418);
   const [mapOptions, setMapOptions] = useState<MapOptions | null>(null);
   const [mapAsset, setMapAsset] = useState("default");
   const [formError, setFormError] = useState<string>("");
   const [agentOptions, setAgentOptions] = useState<AgentOptions | null>(null);
   const [players, setPlayers] = useState<PlayerDraft[]>([]);
+  const [showIntroModal, setShowIntroModal] = useState(true);
 
   const models = useMemo(() => {
     if (agentOptions && agentOptions.model_options.length > 0) {
@@ -132,6 +131,10 @@ export default function SetupPage() {
     setPlayers((current) => current.map((item, i) => (i === idx ? { ...item, ...patch } : item)));
   };
 
+  const onCloseIntro = () => {
+    setShowIntroModal(false);
+  };
+
   const onStartGame = async () => {
     const normalizedName = roomName.trim();
     if (normalizedName.length < 2) {
@@ -170,7 +173,7 @@ export default function SetupPage() {
           : null,
       })),
       max_rounds: maxRounds,
-      seed,
+      seed: 20260418,
       map_asset: mapAsset,
     };
 
@@ -205,34 +208,82 @@ export default function SetupPage() {
 
   return (
     <div className="setup-page">
-      <section className="setup-header panel hero-panel">
-        <p className="eyebrow">AgentMonopoly</p>
-        <h1>开局控制台</h1>
-        <p>30 秒完成房间配置，直接进入对局。你只负责关键决策，流程由系统自动推进。</p>
-        <div className="setup-hero-stats">
-          <div>
-            <strong>{maxPlayers}</strong>
-            <span>当前席位</span>
-          </div>
-          <div>
-            <strong>{maxRounds}</strong>
-            <span>回合上限</span>
-          </div>
-          <div>
-            <strong>{mapAssetLabel}</strong>
-            <span>地图主题</span>
-          </div>
+      <div className="setup-watermark setup-watermark--openai" aria-hidden="true">
+        OpenAI
+      </div>
+      <div className="setup-watermark setup-watermark--anthropic" aria-hidden="true">
+        Anthropic
+      </div>
+      <div className="setup-watermark setup-watermark--qwen" aria-hidden="true">
+        Qwen
+      </div>
+      <div className="setup-watermark setup-watermark--deepseek" aria-hidden="true">
+        DeepSeek
+      </div>
+      {showIntroModal ? (
+        <div className="setup-intro-backdrop" role="dialog" aria-modal="true" aria-labelledby="setup-intro-title">
+          <section className="setup-intro-modal">
+            <button className="setup-intro-close" type="button" aria-label="关闭欢迎弹窗" onClick={onCloseIntro}>
+              ×
+            </button>
+            <div className="setup-intro-kicker">AI STRATEGY MAP</div>
+            <h2 id="setup-intro-title">欢迎来到 Agent Monopoly</h2>
+            <p className="setup-intro-lead">
+              这是一场多模型策略博弈。你可以配置地图、回合与玩家席位，让真人和 AI 在同一规则下竞争、协作、承担风险并积累经验。
+            </p>
+            <div className="setup-intro-routes">
+              <div>
+                <strong>01</strong>
+                <span>选择地图与回合，确定本局约束。</span>
+              </div>
+              <div>
+                <strong>02</strong>
+                <span>安排真人或 AI 席位，对比不同模型的策略差异。</span>
+              </div>
+              <div>
+                <strong>03</strong>
+                <span>进入对局后观察决策、事件与收益变化，结束后查看复盘。</span>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+      ) : null}
+      <form
+        className="panel setup-command-panel"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onStartGame();
+        }}
+      >
+        <header className="setup-command-header">
+          <div className="setup-map-head">
+            <div>
+              <p className="eyebrow">AgentMonopoly</p>
+              <h1>开局控制台</h1>
+              <p>30 秒完成房间配置，直接进入对局。你只负责关键决策，流程由系统自动推进。</p>
+            </div>
+            <div className="setup-map-meta" aria-hidden="true">
+              <span>AI STRATEGY SETUP</span>
+              <span>v1.0</span>
+            </div>
+          </div>
+          <div className="setup-hero-stats">
+            <span>
+              <strong>{maxPlayers}</strong>
+              当前席位
+            </span>
+            <span>
+              <strong>{maxRounds}</strong>
+              回合上限
+            </span>
+            <span>
+              <strong>{mapAssetLabel}</strong>
+              地图主题
+            </span>
+          </div>
+        </header>
 
-      <div className="create-layout setup-create-layout">
-        <form
-          className="panel form-stack setup-form-stack"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onStartGame();
-          }}
-        >
+        <div className="setup-command-body">
           <section className="form-section">
             <div className="panel-title-row">
               <h2>房间参数</h2>
@@ -258,11 +309,7 @@ export default function SetupPage() {
                 <input type="number" min={5} max={200} value={maxRounds} onChange={(e) => setMaxRounds(Number(e.target.value))} />
               </label>
               <label className="field">
-                <span>随机种子</span>
-                <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} />
-              </label>
-              <label className="field">
-                <span>地图主题（仅 UI 与参数透传）</span>
+                <span>地图主题</span>
                 <select value={mapAsset} onChange={(e) => setMapAsset(e.target.value)}>
                   {availableMapAssets.map((asset) => (
                     <option key={asset} value={asset}>
@@ -283,7 +330,8 @@ export default function SetupPage() {
             <div className="seat-list setup-seat-list">
               {players.map((player, index) => (
                 <article key={player.player_id} className="seat-card">
-                  <div className="player-identity player-identity--editor">
+                  <div className="seat-card__header">
+                    <span className="seat-card__badge">P{index + 1}</span>
                     <ModelAvatar
                       officialModelId={player.model}
                       displayName={player.name}
@@ -291,76 +339,57 @@ export default function SetupPage() {
                       size={34}
                     />
                     <div className="player-identity__text">
-                      <p className="seat-card__title">{player.player_id} 号席位</p>
-                      <p className="tiny-note">{player.name || "未命名玩家"}</p>
-                      <p className="tiny-note">
-                        {player.is_agent
-                          ? `AI · ${inferModelTag({
-                              modelId: player.model,
-                              displayName: player.name,
-                              vendorName: player.model.split("/")[0],
-                              isAgent: true,
-                            })}`
-                          : "真人 · human"}
-                      </p>
+                      <p className="seat-card__title">{player.name || "未命名玩家"}</p>
+                      <p className="tiny-note">{player.is_agent ? "AI" : "真人 · human"}</p>
                     </div>
                   </div>
-                  <label className="field">
-                    <span>玩家名称</span>
-                    <input
-                      value={player.name}
-                      onChange={(e) => onChangePlayer(index, { name: e.target.value })}
-                      placeholder="输入玩家名称"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>操控方式</span>
-                    <select
-                      value={player.is_agent ? "ai" : "human"}
-                      onChange={(e) => onChangePlayer(index, { is_agent: e.target.value === "ai" })}
-                    >
-                      <option value="human">真人</option>
-                      <option value="ai">AI</option>
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span>模型 ID</span>
-                    <select
-                      disabled={!player.is_agent}
-                      value={player.model}
-                      onChange={(e) => onChangePlayer(index, { model: e.target.value })}
-                    >
-                      {models.map((modelId) => (
-                        <option key={modelId} value={modelId}>
-                          {modelId}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className={player.is_agent ? "seat-card__controls" : "seat-card__controls seat-card__controls--human"}>
+                    <label className="field">
+                      <span>玩家名称</span>
+                      <input
+                        value={player.name}
+                        onChange={(e) => onChangePlayer(index, { name: e.target.value })}
+                        placeholder="输入玩家名称"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>操控方式</span>
+                      <select
+                        value={player.is_agent ? "ai" : "human"}
+                        onChange={(e) => onChangePlayer(index, { is_agent: e.target.value === "ai" })}
+                      >
+                        <option value="human">真人</option>
+                        <option value="ai">AI</option>
+                      </select>
+                    </label>
+                    {player.is_agent ? (
+                      <label className="field seat-card__model-field">
+                        <span>模型 ID</span>
+                        <select value={player.model} onChange={(e) => onChangePlayer(index, { model: e.target.value })}>
+                          {models.map((modelId) => (
+                            <option key={modelId} value={modelId}>
+                              {modelId}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
+                  </div>
                 </article>
               ))}
             </div>
             <p className="muted">当前阶段 API Key 不在页面录入，后续可通过配置文件注入。</p>
           </section>
+        </div>
 
-          <section className="setup-footer">
-            <button type="submit" className="btn-primary" disabled={isBusy}>
-              开始对局
-            </button>
-            {formError ? <p className="error-text">{formError}</p> : null}
-            {error ? <p className="error-text">{error}</p> : null}
-          </section>
-        </form>
-
-        <SetupPreviewPanel
-          roomName={roomName}
-          maxPlayers={maxPlayers}
-          maxRounds={maxRounds}
-          mapAsset={mapAsset}
-          mapAssetLabel={mapAssetLabel}
-          players={players}
-        />
-      </div>
+        <section className="setup-footer">
+          <button type="submit" className="btn-primary" disabled={isBusy}>
+            开始对局
+          </button>
+          {formError ? <p className="error-text">{formError}</p> : null}
+          {error ? <p className="error-text">{error}</p> : null}
+        </section>
+      </form>
     </div>
   );
 }

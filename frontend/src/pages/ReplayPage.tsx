@@ -9,21 +9,7 @@ export default function ReplayPage() {
   const params = useParams<{ gameId: string }>();
   const routeGameId = params.gameId ?? "";
 
-  const {
-    gameId,
-    replay,
-    replayIndex,
-    summary,
-    isBusy,
-    error,
-    setGameId,
-    loadState,
-    loadReplay,
-    loadSummary,
-    stepReplay,
-    jumpReplayTurn,
-    exportSummary,
-  } = useGameStore();
+  const { gameId, replay, summary, isBusy, error, setGameId, loadState, loadReplay, loadSummary } = useGameStore();
 
   useEffect(() => {
     if (!routeGameId) {
@@ -36,34 +22,18 @@ export default function ReplayPage() {
     void loadState();
     void loadReplay();
     void loadSummary();
-  }, [routeGameId]);
+  }, [gameId, loadReplay, loadState, loadSummary, navigate, routeGameId, setGameId]);
 
   return (
     <div className="replay-page">
-      <section className="panel replay-header">
-        <h1>全局复盘</h1>
-        <div className="replay-header-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate("/setup")}>新建对局</button>
-          <button type="button" className="btn-secondary" onClick={() => navigate(`/game/${encodeURIComponent(routeGameId)}`)}>
-            返回对局
-          </button>
-        </div>
-      </section>
-
-      <section>
-        <ReplayPanel
-          replay={replay}
-          replayIndex={replayIndex}
-          summary={summary}
-          onLoadReplay={loadReplay}
-          onLoadSummary={loadSummary}
-          onStep={stepReplay}
-          onJumpTurn={jumpReplayTurn}
-          onExportSummary={exportSummary}
-        />
-        {isBusy ? <p className="muted">正在加载复盘数据...</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
-      </section>
+      <ReplayPanel
+        replay={replay}
+        summary={summary}
+        isBusy={isBusy}
+        error={error}
+        onNewGame={() => navigate("/setup")}
+        onBackToGame={() => navigate(`/game/${encodeURIComponent(routeGameId)}`)}
+      />
     </div>
   );
 }

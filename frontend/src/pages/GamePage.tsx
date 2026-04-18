@@ -4,11 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ActionPanel } from "../components/ActionPanel";
 import { AgentStreamPanel } from "../components/AgentStreamPanel";
 import { BoardGrid } from "../components/BoardGrid";
-import { DecisionCenter } from "../components/DecisionCenter";
 import { EventTimeline } from "../components/EventTimeline";
 import { ModelAvatar } from "../components/ModelAvatar";
-import { PhaseBadge } from "../components/PhaseBadge";
-import { TaskDockWidgets } from "../components/TaskDockWidgets";
 import { buildPlayerNameMap } from "../lib/eventPresentation";
 import { getGamePlayerProfiles, inferModelTag } from "../lib/modelAvatar";
 import { useGameStore } from "../store/gameStore";
@@ -24,7 +21,6 @@ export default function GamePage() {
     state,
     timeline,
     agentStream,
-    activeAudit,
     wsStatus,
     wsRetryCount,
     isBusy,
@@ -66,10 +62,16 @@ export default function GamePage() {
   }, [state?.status, state?.turn_index, state?.current_player_id, state?.waiting_for_human, isBusy]);
 
   const wsLabel = useMemo(() => {
-    if (wsStatus === "connecting") {
-      return `connecting(${wsRetryCount})`;
+    if (wsStatus === "online") {
+      return "在线";
     }
-    return wsStatus;
+    if (wsStatus === "connecting") {
+      return wsRetryCount > 0 ? `重连中 ${wsRetryCount}` : "连接中";
+    }
+    if (wsStatus === "offline") {
+      return "离线";
+    }
+    return "未连接";
   }, [wsStatus, wsRetryCount]);
 
   const stageHint = useMemo(() => {
@@ -152,53 +154,24 @@ export default function GamePage() {
           <h1>{roomName || state.game_id}</h1>
           <p className="stage-hint">{stageHint}</p>
           <div className="status-strip">
-            <span>game: {state.game_id}</span>
-            <span>status: {state.status}</span>
-            <span>
-              round: {state.round_index}/{state.max_rounds}
-            </span>
-            <span>turn: {state.turn_index}</span>
+            <span>第 {state.round_index}/{state.max_rounds} 轮</span>
             {currentPlayerMeta ? (
               <span className="status-player">
                 <ModelAvatar
                   officialModelId={currentPlayerMeta.modelId}
                   displayName={currentPlayerMeta.displayName}
                   vendorName={currentPlayerMeta.vendorName}
-                  size={24}
+                  size={22}
                   variant="bare"
                 />
-                <span>
-                  current: {currentPlayerMeta.displayName} ({currentPlayerMeta.playerId})
-                </span>
-                <span className="tiny-note">{currentPlayerMeta.isAgent ? `AI · ${currentPlayerMeta.modelTag}` : "真人 · human"}</span>
+                <span>轮到：{currentPlayerMeta.displayName}</span>
+                <span className="tiny-note">{currentPlayerMeta.isAgent ? `AI · ${currentPlayerMeta.modelTag}` : "真人玩家"}</span>
               </span>
             ) : null}
-            <span>WS: {wsLabel}</span>
+            <span>连接：{wsLabel}</span>
           </div>
         </div>
-        <div className="battle-global-side">
-          <PhaseBadge phase={state.current_phase} />
-          {activeAudit ? (
-            <div className="tiny-note">
-              {activeAudit.model_tag} {"=>"} {activeAudit.final_decision.action}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="battle-main">
-        <div className="battle-left">
-          <DecisionCenter state={state} timeline={timeline} activeAudit={activeAudit} wsStatus={wsStatus} error={error} />
-          <BoardGrid state={state} />
-        </div>
-        <div className="battle-right">
-          <EventTimeline events={timeline} playerNameMap={playerNameMap} />
-          <AgentStreamPanel entries={agentStream} />
-        </div>
-      </section>
-
-      <section className="battle-action panel taskbar-panel">
-        <div className="battle-action-row">
+        <div className="battle-global-action">
           <ActionPanel
             state={state}
             busy={isBusy}
@@ -209,16 +182,16 @@ export default function GamePage() {
             onReconnect={handleReconnect}
           />
         </div>
-        <TaskDockWidgets state={state} />
-        <div className="battle-action-aux">
-          <button type="button" className="btn-secondary" onClick={() => navigate(`/replay/${encodeURIComponent(state.game_id)}`)}>
-            查看复盘页
-          </button>
-          <button type="button" className="btn-secondary" onClick={() => navigate("/setup")}>
-            回到配置页
-          </button>
-          {error ? <p className="error-text">{error}</p> : null}
+      </section>
+
+      <section className="battle-main">
+        <div className="battle-left">
+          <BoardGrid state={state} />
         </div>
+        <aside className="battle-right" aria-label="对局侧栏">
+          <EventTimeline events={timeline} playerNameMap={playerNameMap} />
+          <AgentStreamPanel entries={agentStream} />
+        </aside>
       </section>
     </div>
   );

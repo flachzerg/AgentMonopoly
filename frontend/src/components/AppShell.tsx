@@ -14,6 +14,7 @@ export function AppShell() {
 
   const activeGameId = gameMatch?.params.gameId ?? replayMatch?.params.gameId ?? latestGameId;
   const isMatchExperience = location.pathname.startsWith("/game/");
+  const hasSecondaryNavigation = Boolean(activeGameId);
 
   return (
     <div className="site-shell">
@@ -24,21 +25,19 @@ export function AppShell() {
             <span className="site-brand__name">实时博弈控制台</span>
           </div>
 
-          <nav className={isMatchExperience ? "site-nav site-nav--immersive" : "site-nav"} aria-label="主导航">
-            <NavLink to="/setup" className={buildLinkClass}>
-              配置页
-            </NavLink>
-            {activeGameId ? (
+          {hasSecondaryNavigation ? (
+            <nav className={isMatchExperience ? "site-nav site-nav--immersive" : "site-nav"} aria-label="主导航">
+              <NavLink to="/setup" className={buildLinkClass}>
+                配置
+              </NavLink>
               <NavLink to={`/game/${encodeURIComponent(activeGameId)}`} className={buildLinkClass}>
-                对局页
+                对局
               </NavLink>
-            ) : null}
-            {activeGameId ? (
               <NavLink to={`/replay/${encodeURIComponent(activeGameId)}`} className={buildLinkClass}>
-                复盘页
+                复盘
               </NavLink>
-            ) : null}
-          </nav>
+            </nav>
+          ) : null}
         </div>
       </header>
 
