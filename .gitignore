@@ -5,3 +5,26 @@ frontend/node_modules/
 *.pyc
 __pycache__/
 frontend/dist/
+
+# Env files
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Python cache / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
