@@ -27,21 +27,21 @@ class TemplateVersion:
             for item in turn_input.options
         }
         sections = [
-            f"# Template: {self.key}",
-            f"version: {self.version}",
-            f"objective: {self.objective}",
-            f"risk_notice: {self.risk_notice}",
+            f"# 模板: {self.key}",
+            f"版本: {self.version}",
+            f"用途: {self.objective}",
+            f"硬约束: {self.risk_notice}",
             "",
-            "## Rules",
+            "## 场景现状",
             self.body,
             "",
-            "## Parameter Range",
+            "## 动作参数范围",
             json.dumps(options_summary, ensure_ascii=False, sort_keys=True),
             "",
-            "## Output Contract",
+            "## 输出合同",
             json.dumps(turn_input.output_contract.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
             "",
-            "## Turn Input JSON",
+            "## 回合输入 JSON",
             json.dumps(turn_input.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
             "",
         ]
@@ -53,19 +53,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="PROPERTY_UNOWNED_TEMPLATE",
             version="1.0.0",
-            objective="Choose buy_property or skip_buy with expected value and cash safety in mind.",
-            risk_notice="Never emit action outside options.allowed_values and never invent tile_id.",
-            body="At unowned property tiles, prioritize long-term toll yield but keep liquidity for near-term risks.",
-            change_note="Initial stable prompt for unowned property decision.",
+            objective="描述无人地产格事实信息。",
+            risk_notice="动作仅可来自 options，参数必须命中 allowed_values。",
+            body=(
+                "当前格子类型为 PROPERTY_UNOWNED。输入 JSON 内含地块价格、过路费、玩家现金、玩家总资产、"
+                "棋盘快照与其余玩家信息。可选动作通常含 buy_property、skip_buy、pass。"
+            ),
+            change_note="无人地产模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="PROPERTY_UNOWNED_TEMPLATE",
             version="1.1.0",
-            objective="Optimize buy decision using expected pass-by traffic and liquidity threshold.",
-            risk_notice="If uncertainty is high, choose skip_buy instead of overspending.",
-            body="Use conservative capital floor at 30% of net liquid assets when deciding buy_property.",
-            change_note="Added explicit liquidity floor and uncertainty policy.",
+            objective="描述无人地产格事实信息（字段排序优化版）。",
+            risk_notice="必须返回合同字段，且不得输出额外字段。",
+            body=(
+                "该回合处于 DECISION 阶段，落点为无人地产。输入 JSON 提供地块 id、地块价值、玩家资金、"
+                "联盟状态与候选动作列表。模型仅需在候选动作里给出一个动作。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -73,19 +79,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="PROPERTY_SELF_TEMPLATE",
             version="1.0.0",
-            objective="At own property tiles, avoid unnecessary risk and keep strategic posture.",
-            risk_notice="Do not emit economic actions that are not in options.",
-            body="Most turns should choose pass unless alliance management action has immediate value.",
-            change_note="Initial version.",
+            objective="描述己方地产格事实信息。",
+            risk_notice="仅可使用当前轮可选动作与允许参数。",
+            body=(
+                "当前落点为己方地产。输入 JSON 包含本方地产列表、当前资金、全局玩家快照、"
+                "以及本轮动作候选项。"
+            ),
+            change_note="己方地产模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="PROPERTY_SELF_TEMPLATE",
             version="1.1.0",
-            objective="At own property, optionally strengthen alliance if matchup advantage exists.",
-            risk_notice="Never break output contract fields.",
-            body="Prefer pass, but propose_alliance can be selected when it lowers near-term toll risk.",
-            change_note="Alliance hint added.",
+            objective="描述己方地产格事实信息（结构优化版）。",
+            risk_notice="输出必须符合 DY-MONO-TURN-OUT/3.1。",
+            body=(
+                "当前格子由当前玩家持有。输入 JSON 内含玩家状态、棋盘状态、联盟状态与动作候选。"
+                "模型只需输出一个合法动作与参数。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -93,19 +105,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="PROPERTY_ALLY_TEMPLATE",
             version="1.0.0",
-            objective="At ally property tiles, maintain cooperative value and avoid conflict actions.",
-            risk_notice="Respect only available actions.",
-            body="Default action is pass; alliance maintenance can be selected only when available.",
-            change_note="Initial version.",
+            objective="描述盟友地产格事实信息。",
+            risk_notice="动作与参数必须满足 options 约束。",
+            body=(
+                "当前落点为盟友地产。输入 JSON 给出联盟关系、玩家资产与动作候选项。"
+                "该场景不会出现合同外动作。"
+            ),
+            change_note="盟友地产模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="PROPERTY_ALLY_TEMPLATE",
             version="1.1.0",
-            objective="Maintain alliance advantage while preserving cash flexibility.",
-            risk_notice="When options are ambiguous, choose pass.",
-            body="Prefer pass unless alliance action directly boosts expected survival probability.",
-            change_note="Improved ambiguity policy.",
+            objective="描述盟友地产格事实信息（字段精简版）。",
+            risk_notice="必须返回 action 与 args，且字段名不可变。",
+            body=(
+                "当前为盟友地产场景。输入 JSON 含玩家关系、经济状态、动作候选列表。"
+                "模型输出仅用于系统执行层。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -113,19 +131,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="PROPERTY_OTHER_TEMPLATE",
             version="1.0.0",
-            objective="At opponent property tiles after auto settlement, avoid compounding risk.",
-            risk_notice="No speculative outputs; choose from options only.",
-            body="Prioritize liquidity-preserving action and avoid overcommitment.",
-            change_note="Initial version.",
+            objective="描述他方地产格事实信息。",
+            risk_notice="禁止输出 options 外动作或非法参数。",
+            body=(
+                "当前落点为他方地产，AUTO_SETTLE 已执行。输入 JSON 含结算后资金状态、"
+                "玩家快照与动作候选项。"
+            ),
+            change_note="他方地产模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="PROPERTY_OTHER_TEMPLATE",
             version="1.1.0",
-            objective="Post-toll decision should prefer defensive actions under low cash.",
-            risk_notice="Fallback-friendly behavior is required if confidence is low.",
-            body="Choose pass in low confidence states; avoid risky alliance churn.",
-            change_note="Defensive guidance strengthened.",
+            objective="描述他方地产格事实信息（结构优化版）。",
+            risk_notice="返回 JSON 必须可被严格 schema 校验通过。",
+            body=(
+                "该回合场景为 PROPERTY_OTHER。输入 JSON 已给出全部业务事实与动作边界，"
+                "模型无需扩展业务规则。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -133,19 +157,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="BANK_TEMPLATE",
             version="1.0.0",
-            objective="Choose bank_deposit, bank_withdraw, or pass to optimize liquidity and resilience.",
-            risk_notice="amount must stay inside allowed_values.amount.",
-            body="Deposit when idle cash is high; withdraw when short-term payments likely exceed cash.",
-            change_note="Initial bank policy.",
+            objective="描述银行格事实信息。",
+            risk_notice="若动作含 amount，值必须命中 allowed_values.amount。",
+            body=(
+                "当前落点为 BANK。输入 JSON 包含现金、存款、动作候选项与参数范围。"
+                "可选动作可能含 bank_deposit、bank_withdraw、pass。"
+            ),
+            change_note="银行模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="BANK_TEMPLATE",
             version="1.1.0",
-            objective="Balance liquidity runway with growth opportunities using dynamic cash buffer.",
-            risk_notice="Never invent amount; use provided numeric range only.",
-            body="Target cash buffer equals expected toll exposure of next two turns.",
-            change_note="Dynamic buffer rule added.",
+            objective="描述银行格事实信息（字段排序优化版）。",
+            risk_notice="只能在合同字段内输出，不得附加解释字段。",
+            body=(
+                "BANK 场景下，输入 JSON 已给定资金状态、参数上下界与动作候选。"
+                "模型仅输出一个合法动作。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -153,19 +183,25 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="EVENT_TEMPLATE",
             version="1.0.0",
-            objective="After event settlement, adapt next action to volatility and current cash position.",
-            risk_notice="Do not emit hidden fields.",
-            body="Use conservative action when event volatility is high.",
-            change_note="Initial event prompt.",
+            objective="描述事件格事实信息。",
+            risk_notice="输出字段必须完全匹配 output_contract。",
+            body=(
+                "当前落点为 EVENT，事件结算已进入状态。输入 JSON 含事件后资金变化、"
+                "玩家快照与本轮候选动作。"
+            ),
+            change_note="事件模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="EVENT_TEMPLATE",
             version="1.1.0",
-            objective="Convert event outcome into immediate risk-aware action.",
-            risk_notice="If action confidence is below 0.5, prefer pass.",
-            body="Capture event upside when safe, otherwise lock defensive stance.",
-            change_note="Confidence policy added.",
+            objective="描述事件格事实信息（结构优化版）。",
+            risk_notice="禁止输出合同外字段与非法动作。",
+            body=(
+                "该回合为 EVENT 场景。输入 JSON 已给出全部状态事实，"
+                "模型仅需返回合法动作 JSON。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -173,19 +209,24 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="EMPTY_TEMPLATE",
             version="1.0.0",
-            objective="At empty tile, select low-risk utility action.",
-            risk_notice="No action beyond options list.",
-            body="Default to pass, only propose alliance if clear strategic edge.",
-            change_note="Initial empty-tile baseline.",
+            objective="描述空格场景事实信息。",
+            risk_notice="动作必须来自 options，参数必须合法。",
+            body=(
+                "当前落点为 EMPTY。输入 JSON 含玩家状态、全局快照、候选动作与参数边界。"
+            ),
+            change_note="空格模板初版。",
             updated_on="2026-04-18",
         ),
         TemplateVersion(
             key="EMPTY_TEMPLATE",
             version="1.1.0",
-            objective="Use empty turns for alliance timing and risk shaping.",
-            risk_notice="Keep outputs minimal and contract-compliant.",
-            body="Prefer pass unless alliance can reduce near-term toll burden.",
-            change_note="Alliance timing hint added.",
+            objective="描述空格场景事实信息（精简版）。",
+            risk_notice="仅返回合同字段，不返回附加说明字段。",
+            body=(
+                "该场景无强制结算逻辑。输入 JSON 提供本轮全部事实信息与动作候选。"
+                "模型只输出单一合法动作。"
+            ),
+            change_note="改为纯现状描述，不含策略指引。",
             updated_on="2026-04-18",
         ),
     ],
@@ -193,10 +234,12 @@ TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
         TemplateVersion(
             key="QUIZ_TEMPLATE",
             version="0.1.0",
-            objective="Reserved slot for quiz chain integration.",
-            risk_notice="MVP route keeps quiz as placeholder and should return pass-safe outputs.",
-            body="Quiz runtime is not fully enabled yet; preserve contract and choose safe action.",
-            change_note="Placeholder template for future quiz flow.",
+            objective="描述 QUIZ 占位场景事实信息。",
+            risk_notice="MVP 阶段 QUIZ 仍为占位链路，输出必须合同合法。",
+            body=(
+                "当前场景标记为 QUIZ，占位逻辑已保留。输入 JSON 含候选动作与参数范围。"
+            ),
+            change_note="新增 QUIZ 占位模板。",
             updated_on="2026-04-18",
         )
     ],
@@ -241,11 +284,11 @@ def get_template_changelog() -> list[dict[str, str]]:
 
 def changelog_markdown() -> str:
     lines = [
-        "# Prompt Template Changelog",
+        "# 提示词模板变更记录",
         "",
-        f"Generated: {date.today().isoformat()}",
+        f"生成日期: {date.today().isoformat()}",
         "",
-        "| Template | Version | Date | Change |",
+        "| 模板 | 版本 | 日期 | 变更 |",
         "|---|---|---|---|",
     ]
     for row in get_template_changelog():

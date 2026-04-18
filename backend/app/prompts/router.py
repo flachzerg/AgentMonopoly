@@ -52,11 +52,5 @@ class PromptABRouter:
 
 
 def default_router() -> PromptABRouter:
-    return PromptABRouter(
-        rules={
-            "PROPERTY_UNOWNED_TEMPLATE": ABRule("1.0.0", "1.1.0", 0.5),
-            "BANK_TEMPLATE": ABRule("1.0.0", "1.1.0", 0.5),
-            "EVENT_TEMPLATE": ABRule("1.0.0", "1.1.0", 0.5),
-            "EMPTY_TEMPLATE": ABRule("1.0.0", "1.1.0", 0.5),
-        }
-    )
+    # 默认关闭 A/B 路由，直接走模板最新版本。
+    return PromptABRouter(rules={})

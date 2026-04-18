@@ -1,21 +1,21 @@
-# Prompt Template Changelog
+# 提示词模板变更记录
 
-Generated: 2026-04-18
+生成日期: 2026-04-18
 
-| Template | Version | Date | Change |
+| 模板 | 版本 | 日期 | 变更 |
 |---|---|---|---|
-| BANK_TEMPLATE | 1.0.0 | 2026-04-18 | Initial bank policy. |
-| BANK_TEMPLATE | 1.1.0 | 2026-04-18 | Dynamic buffer rule added. |
-| EMPTY_TEMPLATE | 1.0.0 | 2026-04-18 | Initial empty-tile baseline. |
-| EMPTY_TEMPLATE | 1.1.0 | 2026-04-18 | Alliance timing hint added. |
-| EVENT_TEMPLATE | 1.0.0 | 2026-04-18 | Initial event prompt. |
-| EVENT_TEMPLATE | 1.1.0 | 2026-04-18 | Confidence policy added. |
-| PROPERTY_ALLY_TEMPLATE | 1.0.0 | 2026-04-18 | Initial version. |
-| PROPERTY_ALLY_TEMPLATE | 1.1.0 | 2026-04-18 | Improved ambiguity policy. |
-| PROPERTY_OTHER_TEMPLATE | 1.0.0 | 2026-04-18 | Initial version. |
-| PROPERTY_OTHER_TEMPLATE | 1.1.0 | 2026-04-18 | Defensive guidance strengthened. |
-| PROPERTY_SELF_TEMPLATE | 1.0.0 | 2026-04-18 | Initial version. |
-| PROPERTY_SELF_TEMPLATE | 1.1.0 | 2026-04-18 | Alliance hint added. |
-| PROPERTY_UNOWNED_TEMPLATE | 1.0.0 | 2026-04-18 | Initial stable prompt for unowned property decision. |
-| PROPERTY_UNOWNED_TEMPLATE | 1.1.0 | 2026-04-18 | Added explicit liquidity floor and uncertainty policy. |
-| QUIZ_TEMPLATE | 0.1.0 | 2026-04-18 | Placeholder template for future quiz flow. |
+| BANK_TEMPLATE | 1.0.0 | 2026-04-18 | 银行模板初版。 |
+| BANK_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| EMPTY_TEMPLATE | 1.0.0 | 2026-04-18 | 空格模板初版。 |
+| EMPTY_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| EVENT_TEMPLATE | 1.0.0 | 2026-04-18 | 事件模板初版。 |
+| EVENT_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| PROPERTY_ALLY_TEMPLATE | 1.0.0 | 2026-04-18 | 盟友地产模板初版。 |
+| PROPERTY_ALLY_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| PROPERTY_OTHER_TEMPLATE | 1.0.0 | 2026-04-18 | 他方地产模板初版。 |
+| PROPERTY_OTHER_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| PROPERTY_SELF_TEMPLATE | 1.0.0 | 2026-04-18 | 己方地产模板初版。 |
+| PROPERTY_SELF_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| PROPERTY_UNOWNED_TEMPLATE | 1.0.0 | 2026-04-18 | 无人地产模板初版。 |
+| PROPERTY_UNOWNED_TEMPLATE | 1.1.0 | 2026-04-18 | 改为纯现状描述，不含策略指引。 |
+| QUIZ_TEMPLATE | 0.1.0 | 2026-04-18 | 新增 QUIZ 占位模板。 |
