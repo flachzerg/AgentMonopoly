@@ -18,8 +18,12 @@ from app.schemas import (
     AgentTurnOutput,
     BoardSnapshot,
     DecisionAudit,
+    DynamicStateContext,
+    MemoryContext,
     OutputContract,
     PlayerSnapshot,
+    RecentActionItem,
+    StaticMapContext,
     TileContext,
     TurnInput,
     TurnMeta,
@@ -195,6 +199,10 @@ class TurnBuildInput:
     history_records: list[dict[str, Any]] = field(default_factory=list)
     model_experience_summary: str | None = None
     strategy_profile: StrategyProfile | None = None
+    static_map: StaticMapContext = field(default_factory=StaticMapContext)
+    dynamic_state: DynamicStateContext = field(default_factory=DynamicStateContext)
+    recent_actions_3turns: list[RecentActionItem] = field(default_factory=list)
+    memory_context: MemoryContext = field(default_factory=MemoryContext)
 
 
 class AgentRuntime:
@@ -233,6 +241,10 @@ class AgentRuntime:
             memory_summary=memory_summary,
             model_experience_summary=payload.model_experience_summary,
             strategy_profile=payload.strategy_profile,
+            static_map=payload.static_map,
+            dynamic_state=payload.dynamic_state,
+            recent_actions_3turns=payload.recent_actions_3turns,
+            memory_context=payload.memory_context,
         )
 
     def decide(self, turn_input: TurnInput) -> AgentDecisionEnvelope:
@@ -314,8 +326,9 @@ class AgentRuntime:
             player_id=turn_input.turn_meta.current_player_id,
             turn_index=turn_input.turn_meta.turn_index,
             action=decision.action,
+            args=decision.args,
             strategy_tags=decision.strategy_tags,
-            note=decision.thought or "",
+            thought=decision.thought or "",
         )
 
         return AgentDecisionEnvelope(decision=decision, audit=audit)

@@ -25,6 +25,7 @@ export default function GamePage() {
     timeline,
     agentStream,
     activeAudit,
+    activeContext,
     wsStatus,
     wsRetryCount,
     isBusy,
@@ -188,7 +189,14 @@ export default function GamePage() {
 
       <section className="battle-main">
         <div className="battle-left">
-          <DecisionCenter state={state} timeline={timeline} activeAudit={activeAudit} wsStatus={wsStatus} error={error} />
+          <DecisionCenter
+            state={state}
+            timeline={timeline}
+            activeAudit={activeAudit}
+            activeContext={activeContext}
+            wsStatus={wsStatus}
+            error={error}
+          />
           <BoardGrid state={state} />
         </div>
         <div className="battle-right">

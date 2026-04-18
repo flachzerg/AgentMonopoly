@@ -4,6 +4,7 @@ import { gamesApi } from "../services/api";
 import { GameWsClient, type WsStatus } from "../services/ws";
 import { jumpReplayIndex, stepReplayIndex } from "./replayPlayer";
 import type {
+  AgentContextPacket,
   CreateGameRequest,
   DecisionAudit,
   EventRecord,
@@ -34,6 +35,7 @@ type GameStore = {
   replayIndex: number;
   summary: ReplaySummary | null;
   activeAudit: DecisionAudit | null;
+  activeContext: AgentContextPacket | null;
   agentStream: AgentStreamEntry[];
   wsStatus: WsStatus;
   wsRetryCount: number;
@@ -200,6 +202,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   replayIndex: 0,
   summary: null,
   activeAudit: null,
+  activeContext: null,
   agentStream: [],
   wsStatus: "idle",
   wsRetryCount: 0,
@@ -238,6 +241,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         replayIndex: 0,
         summary: null,
         activeAudit: null,
+        activeContext: null,
         agentStream: [],
       });
       await get().refreshGameList();
@@ -309,6 +313,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             state: payload.state ?? current.state,
             timeline: nextTimeline,
             activeAudit: payload.audit ?? current.activeAudit,
+            activeContext: payload.agent_context ?? current.activeContext,
             agentStream: appendAgentStream(current.agentStream, payload.audit),
           };
         });

@@ -148,6 +148,48 @@ class BoardSnapshot(StrictModel):
     tiles: list[BoardTileSnapshot]
 
 
+class StaticMapContext(StrictModel):
+    map_id: str = "unknown"
+    topology: Literal["loop", "graph"] = "loop"
+    track_length: int = 0
+    start_tile_id: str | None = None
+    theme: str | None = None
+    version: str | None = None
+    tiles: list[dict[str, Any]] = Field(default_factory=list)
+    edges: list[dict[str, str]] = Field(default_factory=list)
+
+
+class LocalHorizonPaths(StrictModel):
+    lookahead_steps: int = 6
+    branch_entry_tile_id: str | None = None
+    paths: list[list[str]] = Field(default_factory=list)
+
+
+class DynamicStateContext(StrictModel):
+    turn_meta: dict[str, Any] = Field(default_factory=dict)
+    self_state: dict[str, Any] = Field(default_factory=dict)
+    others_state: list[dict[str, Any]] = Field(default_factory=list)
+    risk_hints: dict[str, Any] = Field(default_factory=dict)
+    local_horizon_paths: LocalHorizonPaths = Field(default_factory=LocalHorizonPaths)
+
+
+class RecentActionItem(StrictModel):
+    turn: int
+    action: str
+    target: str | None = None
+    thought: str | None = None
+    amount: int | None = None
+    to: str | None = None
+    result: str = "accepted"
+    delta_cash: int = 0
+
+
+class MemoryContext(StrictModel):
+    short_term_summary: str = ""
+    long_term_summary: str = ""
+    summary_version: str = "v1"
+
+
 class TurnInput(StrictModel):
     protocol: Literal["DY-MONO-TURN-IN/3.1"] = TURN_IN_PROTOCOL
     turn_meta: TurnMeta
@@ -163,6 +205,10 @@ class TurnInput(StrictModel):
     memory_summary: str | None = None
     model_experience_summary: str | None = None
     strategy_profile: StrategyProfile | None = None
+    static_map: StaticMapContext = Field(default_factory=StaticMapContext)
+    dynamic_state: DynamicStateContext = Field(default_factory=DynamicStateContext)
+    recent_actions_3turns: list[RecentActionItem] = Field(default_factory=list)
+    memory_context: MemoryContext = Field(default_factory=MemoryContext)
 
 
 class AgentTurnOutput(StrictModel):

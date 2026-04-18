@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from collections import deque
 from typing import Any
 from uuid import uuid4
 
@@ -1005,6 +1006,76 @@ class GameManager:
                 best_depth[next_id] = next_depth
                 queue.append((next_id, next_depth))
         return sorted(targets)
+
+    def build_local_horizon_paths(self, session: GameSession, player: Player, lookahead: int = 6) -> dict[str, Any]:
+        if lookahead <= 0:
+            return {"lookahead_steps": lookahead, "branch_entry_tile_id": None, "paths": []}
+
+        start_tile = self._player_tile(session, player)
+        paths: list[list[str]] = []
+        queue: deque[tuple[str, int, list[str]]] = deque([(start_tile.tile_id, 0, [])])
+        branch_entry_tile_id: str | None = None
+
+        while queue:
+            tile_id, depth, path = queue.popleft()
+            if depth >= lookahead:
+                paths.append(path)
+                continue
+
+            tile = self._find_tile(session, tile_id)
+            next_ids = self._next_tile_ids(session, tile)
+            if not next_ids:
+                paths.append(path)
+                continue
+            if len(next_ids) > 1 and branch_entry_tile_id is None:
+                branch_entry_tile_id = tile_id
+
+            for next_id in next_ids:
+                queue.append((next_id, depth + 1, [*path, next_id]))
+
+        normalized = []
+        seen: set[tuple[str, ...]] = set()
+        for path in paths:
+            key = tuple(path[:lookahead])
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            normalized.append(list(key))
+
+        return {
+            "lookahead_steps": lookahead,
+            "branch_entry_tile_id": branch_entry_tile_id,
+            "paths": normalized,
+        }
+
+    def distance_to_nearest_tile_type(
+        self,
+        session: GameSession,
+        player: Player,
+        target_tile_types: set[str],
+        lookahead: int = 12,
+    ) -> int | None:
+        if lookahead <= 0:
+            return None
+        start_tile = self._player_tile(session, player)
+        queue: deque[tuple[str, int]] = deque([(start_tile.tile_id, 0)])
+        best_depth: dict[str, int] = {start_tile.tile_id: 0}
+
+        while queue:
+            tile_id, depth = queue.popleft()
+            tile = self._find_tile(session, tile_id)
+            if depth > 0 and tile.tile_type in target_tile_types:
+                return depth
+            if depth >= lookahead:
+                continue
+            for next_id in self._next_tile_ids(session, tile):
+                next_depth = depth + 1
+                previous = best_depth.get(next_id)
+                if previous is not None and previous <= next_depth:
+                    continue
+                best_depth[next_id] = next_depth
+                queue.append((next_id, next_depth))
+        return None
 
     def _find_player(self, session: GameSession, player_id: str) -> Player:
         for item in session.players:

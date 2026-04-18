@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 
-import type { DecisionAudit, EventRecord, GameState } from "../types/game";
+import type { AgentContextPacket, DecisionAudit, EventRecord, GameState } from "../types/game";
 
 type Props = {
   state: GameState;
   timeline: EventRecord[];
   activeAudit: DecisionAudit | null;
+  activeContext: AgentContextPacket | null;
   wsStatus: "idle" | "connecting" | "online" | "offline";
   error: string | null;
 };
@@ -114,7 +115,7 @@ function getExecutionState(state: GameState, wsStatus: Props["wsStatus"], error:
   return "paused";
 }
 
-export const DecisionCenter: FC<Props> = ({ state, timeline, activeAudit, wsStatus, error }) => {
+export const DecisionCenter: FC<Props> = ({ state, timeline, activeAudit, activeContext, wsStatus, error }) => {
   const history = useMemo(() => buildHistory(state, timeline, activeAudit), [state, timeline, activeAudit]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
@@ -187,6 +188,7 @@ export const DecisionCenter: FC<Props> = ({ state, timeline, activeAudit, wsStat
     wsStatus,
     error,
     audit: activeAudit,
+    agent_context: activeContext,
   },
   null,
   2,

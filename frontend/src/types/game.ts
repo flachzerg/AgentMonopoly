@@ -65,6 +65,21 @@ export type DecisionAudit = {
   };
 };
 
+export type AgentContextPacket = {
+  protocol: string;
+  template_key: string;
+  template_version: string;
+  turn_meta: Record<string, unknown>;
+  tile_context: Record<string, unknown>;
+  player_state: Record<string, unknown>;
+  static_map: Record<string, unknown>;
+  dynamic_state: Record<string, unknown>;
+  recent_actions_3turns: Array<Record<string, unknown>>;
+  memory_context: Record<string, unknown>;
+  options: ActionOption[];
+  output_contract: Record<string, unknown>;
+};
+
 export type GameState = {
   game_id: string;
   status: "waiting" | "running" | "finished";
@@ -134,6 +149,7 @@ export type WsStateSyncPayload = {
   state?: GameState;
   event?: EventRecord | null;
   audit?: DecisionAudit;
+  agent_context?: AgentContextPacket;
   message?: string;
   game_id?: string;
   player_id?: string;

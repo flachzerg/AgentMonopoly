@@ -9,6 +9,8 @@ from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconn
 from fastapi.responses import PlainTextResponse
 
 from app.agent_runtime import AgentRuntime, RuntimeConfig, TurnBuildInput
+from app.agent_memory import AgentMemoryStore
+from app.context_builder import AgentContextBuilder
 from app.core.agent_options import load_agent_options
 from app.game_engine import GameManager
 from app.map_engine import default_map_path, list_map_paths, map_asset_from_path
@@ -35,8 +37,11 @@ _manager = GameManager()
 _agent_options = load_agent_options()
 _strategy_manager = StrategyEvolutionManager()
 _experience_store = ModelExperienceStore()
+_memory_store = AgentMemoryStore(max_entries=8)
+_context_builder = AgentContextBuilder(lookahead_steps=6, recent_action_window=3)
 _summary_cache: dict[str, ReplayExport] = {}
 _evolved_games: set[str] = set()
+_latest_agent_context: dict[str, dict[str, Any]] = {}
 
 
 @dataclass
@@ -172,7 +177,24 @@ def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
 
 
 def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
-    return AgentRuntime(config=_resolve_runtime_config(game_id, player_id))
+    return AgentRuntime(config=_resolve_runtime_config(game_id, player_id), memory=_memory_store)
+
+
+def _serialize_agent_context(turn_input) -> dict[str, Any]:
+    return {
+        "protocol": turn_input.protocol,
+        "template_key": turn_input.template_key,
+        "template_version": turn_input.template_version,
+        "turn_meta": turn_input.turn_meta.model_dump(mode="json"),
+        "tile_context": turn_input.tile_context.model_dump(mode="json"),
+        "player_state": turn_input.player_state.model_dump(mode="json"),
+        "static_map": turn_input.static_map.model_dump(mode="json"),
+        "dynamic_state": turn_input.dynamic_state.model_dump(mode="json"),
+        "recent_actions_3turns": [item.model_dump(mode="json") for item in turn_input.recent_actions_3turns],
+        "memory_context": turn_input.memory_context.model_dump(mode="json"),
+        "options": [item.model_dump(mode="json") for item in turn_input.options],
+        "output_contract": turn_input.output_contract.model_dump(mode="json"),
+    }
 
 
 def _build_turn_input_v2(game_id: str, runtime: AgentRuntime):
@@ -201,6 +223,17 @@ def _build_turn_input_v2(game_id: str, runtime: AgentRuntime):
         model_experience_summary=_experience_store.context_for_model(runtime_cfg.model_name),
         strategy_profile=_strategy_manager.profile_for_player(current.player_id),
     )
+    static_map, dynamic_state, recent_actions, memory_context = _context_builder.build(
+        manager=_manager,
+        session=session,
+        current_player=current,
+        strategy_profile=payload.strategy_profile,
+        memory=_memory_store,
+    )
+    payload.static_map = static_map
+    payload.dynamic_state = dynamic_state
+    payload.recent_actions_3turns = recent_actions
+    payload.memory_context = memory_context
     return runtime.build_turn_input(payload)
 
 
@@ -262,6 +295,11 @@ def _finalize_if_needed(game_id: str) -> None:
         return
     _strategy_manager.evolve_from_game(game_id, state)
     _evolve_model_experience(game_id, state)
+    for item in state.players:
+        _memory_store.update_long_term_summary(
+            item.player_id,
+            f"上一局总结：净资产={item.net_worth}，现金={item.cash}，存款={item.deposit}，存活={item.alive}",
+        )
     _evolved_games.add(game_id)
 
 
@@ -302,7 +340,12 @@ def _evolve_model_experience(game_id: str, state) -> None:
         )
 
 
-async def _broadcast_state_sync(game_id: str, event: dict[str, Any] | None = None, audit: dict[str, Any] | None = None) -> None:
+async def _broadcast_state_sync(
+    game_id: str,
+    event: dict[str, Any] | None = None,
+    audit: dict[str, Any] | None = None,
+    agent_context: dict[str, Any] | None = None,
+) -> None:
     payload: dict[str, Any] = {
         "type": "state.sync",
         "state": _manager.state(game_id).model_dump(mode="json"),
@@ -310,6 +353,9 @@ async def _broadcast_state_sync(game_id: str, event: dict[str, Any] | None = Non
     }
     if audit is not None:
         payload["audit"] = audit
+    context_payload = agent_context if agent_context is not None else _latest_agent_context.get(game_id)
+    if context_payload is not None:
+        payload["agent_context"] = context_payload
     await ws_manager.broadcast(game_id, payload)
 
 
@@ -335,6 +381,8 @@ async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_hu
 
     runtime = _runtime_for_player(game_id, player_id)
     turn_input = _build_turn_input_v2(game_id, runtime)
+    context_packet = _serialize_agent_context(turn_input)
+    _latest_agent_context[game_id] = context_packet
     envelope = runtime.decide(turn_input)
     session = _manager.get_game(game_id)
     player = next((item for item in session.players if item.player_id == player_id), None)
@@ -359,6 +407,7 @@ async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_hu
         game_id,
         event=event.model_dump(mode="json") if event else None,
         audit=envelope.audit.model_dump(mode="json"),
+        agent_context=context_packet,
     )
     return accepted, message, ActionResponse(
         accepted=accepted,
@@ -565,7 +614,10 @@ async def game_ws_v2(game_id: str, socket: WebSocket) -> None:
     try:
         if _manager.has_game(game_id):
             state = _manager.state(game_id)
-            await socket.send_json({"type": "state.sync", "state": state.model_dump(mode="json")})
+            payload: dict[str, Any] = {"type": "state.sync", "state": state.model_dump(mode="json")}
+            if game_id in _latest_agent_context:
+                payload["agent_context"] = _latest_agent_context[game_id]
+            await socket.send_json(payload)
         else:
             await socket.send_json({"type": "error", "message": "unknown game"})
 
@@ -583,7 +635,10 @@ async def game_ws_v2(game_id: str, socket: WebSocket) -> None:
                 await socket.send_json({"type": "pong"})
             elif payload.get("type") == "sync_request" and _manager.has_game(game_id):
                 state = _manager.state(game_id)
-                await socket.send_json({"type": "state.sync", "state": state.model_dump(mode="json")})
+                sync_payload: dict[str, Any] = {"type": "state.sync", "state": state.model_dump(mode="json")}
+                if game_id in _latest_agent_context:
+                    sync_payload["agent_context"] = _latest_agent_context[game_id]
+                await socket.send_json(sync_payload)
             else:
                 await socket.send_json({"type": "error", "message": "unknown message type"})
     except WebSocketDisconnect:
