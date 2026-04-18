@@ -1,0 +1,413 @@
+{
+  "meta": {
+    "map_id": "branch18",
+    "track_length": 18,
+    "theme": "city-branch",
+    "version": "1.1.0",
+    "topology": "graph",
+    "start_tile_id": "T00",
+    "canvas": {
+      "width": 980,
+      "height": 660
+    }
+  },
+  "tiles": [
+    {
+      "tile_id": "T00",
+      "tile_index": 0,
+      "name": "Start",
+      "tile_type": "START",
+      "tile_subtype": "START",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T01"
+      ],
+      "render": {
+        "x": 360,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T01",
+      "tile_index": 1,
+      "name": "Hill Road",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 220,
+      "toll": 44,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T02"
+      ],
+      "render": {
+        "x": 520,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T02",
+      "tile_index": 2,
+      "name": "Open Park",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_SMALL",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T03"
+      ],
+      "render": {
+        "x": 680,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T03",
+      "tile_index": 3,
+      "name": "Branch Gate",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T04A",
+        "T04B"
+      ],
+      "render": {
+        "x": 840,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T04A",
+      "tile_index": 4,
+      "name": "Skyline A",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 260,
+      "toll": 52,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T05A"
+      ],
+      "render": {
+        "x": 840,
+        "y": 200,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T05A",
+      "tile_index": 5,
+      "name": "A Side Hub",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T06"
+      ],
+      "render": {
+        "x": 840,
+        "y": 360,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T04B",
+      "tile_index": 6,
+      "name": "Mystery B",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_RANDOM",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T05B"
+      ],
+      "render": {
+        "x": 680,
+        "y": 200,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T05B",
+      "tile_index": 7,
+      "name": "B Side Mall",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 300,
+      "toll": 60,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T06"
+      ],
+      "render": {
+        "x": 680,
+        "y": 360,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T06",
+      "tile_index": 8,
+      "name": "Merge Point",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T07"
+      ],
+      "render": {
+        "x": 840,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T07",
+      "tile_index": 9,
+      "name": "Lake View",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 320,
+      "toll": 64,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T08"
+      ],
+      "render": {
+        "x": 680,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T08",
+      "tile_index": 10,
+      "name": "Main Bank",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T09"
+      ],
+      "render": {
+        "x": 520,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T09",
+      "tile_index": 11,
+      "name": "Fortune Gate",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_BIG",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T10"
+      ],
+      "render": {
+        "x": 360,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T10",
+      "tile_index": 12,
+      "name": "Sunset Ave",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 280,
+      "toll": 56,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T11"
+      ],
+      "render": {
+        "x": 200,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T11",
+      "tile_index": 13,
+      "name": "Metro Station",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T12"
+      ],
+      "render": {
+        "x": 40,
+        "y": 520,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T12",
+      "tile_index": 14,
+      "name": "Market Square",
+      "tile_type": "PROPERTY",
+      "tile_subtype": "PROPERTY",
+      "property_price": 360,
+      "toll": 72,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T13"
+      ],
+      "render": {
+        "x": 40,
+        "y": 360,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T13",
+      "tile_index": 15,
+      "name": "Open Street",
+      "tile_type": "EMPTY",
+      "tile_subtype": "EMPTY",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T14"
+      ],
+      "render": {
+        "x": 40,
+        "y": 200,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T14",
+      "tile_index": 16,
+      "name": "Lucky Lane",
+      "tile_type": "EVENT",
+      "tile_subtype": "EVENT",
+      "property_price": null,
+      "toll": null,
+      "event_key": "EVT_SMALL",
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T15"
+      ],
+      "render": {
+        "x": 40,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    },
+    {
+      "tile_id": "T15",
+      "tile_index": 17,
+      "name": "Reserve Bank",
+      "tile_type": "BANK",
+      "tile_subtype": "BANK",
+      "property_price": null,
+      "toll": null,
+      "event_key": null,
+      "quiz_key": null,
+      "next_tile_ids": [
+        "T00"
+      ],
+      "render": {
+        "x": 200,
+        "y": 40,
+        "w": 100,
+        "h": 100,
+        "rotation": 0,
+        "label_anchor": "center"
+      }
+    }
+  ]
+}

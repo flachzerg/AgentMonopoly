@@ -62,12 +62,19 @@ def _build_turn_input_v2(game_id: str, runtime: AgentRuntime):
     current = session.players[session.current_player_index]
     snapshots = _manager.build_players_snapshot(session)
     player_snapshot = next(item for item in snapshots if item.player_id == current.player_id)
+    board_tiles = _manager.build_board_snapshot(session)
+    topology = "graph" if any(len(item.next_tile_ids) > 1 for item in board_tiles) else "loop"
     payload = TurnBuildInput(
         turn_meta=_manager.build_turn_meta(session),
         tile_context=_manager.build_tile_context(session),
         player_state=player_snapshot,
         players_snapshot=snapshots,
-        board_snapshot=BoardSnapshot(track_length=len(session.board), tiles=_manager.build_board_snapshot(session)),
+        board_snapshot=BoardSnapshot(
+            track_length=len(session.board),
+            topology=topology,
+            start_tile_id=next((item.tile_id for item in session.board if item.tile_type == "START"), session.board[0].tile_id),
+            tiles=board_tiles,
+        ),
         options=session.allowed_actions,
         history_records=[
             {

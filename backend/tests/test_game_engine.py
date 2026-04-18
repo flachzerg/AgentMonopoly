@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from app.game_engine import GameManager
 from app.schemas import PlayerConfig
@@ -112,6 +113,54 @@ class GameEngineTestCase(unittest.TestCase):
         state = manager.state("g-bankrupt")
         p1 = next(item for item in state.players if item.player_id == "p1")
         self.assertFalse(p1.alive)
+
+    def test_route_preference_option_appears_when_branch_within_six_steps(self) -> None:
+        manager = self._new_manager()
+        self._create_game(manager, "g-branch-option", seed=2)
+        session = manager.get_game("g-branch-option")
+        board = {item.tile_id: item for item in session.board}
+        board["T00"].next_tile_ids = ["T01"]
+        board["T01"].next_tile_ids = ["T02"]
+        board["T02"].next_tile_ids = ["T03", "T04"]
+
+        session.current_phase = "DECISION"
+        session.active_tile_id = "T00"
+        session.active_tile_index = 0
+        session.allowed_actions = manager._allowed_actions(session)  # noqa: SLF001
+
+        option = next((item for item in session.allowed_actions if item.action == "set_route_preference"), None)
+        self.assertIsNotNone(option)
+        self.assertEqual(sorted(option.allowed_values["target_tile_id"]), ["T03", "T04"])
+
+        accepted, _, _ = manager.apply_action(
+            "g-branch-option",
+            "p1",
+            "set_route_preference",
+            {"target_tile_id": "T04"},
+        )
+        self.assertTrue(accepted)
+        self.assertEqual(session.current_phase, "DECISION")
+        self.assertEqual(session.players[0].route_preference_tile_id, "T04")
+
+    def test_roll_prefers_configured_branch_target(self) -> None:
+        manager = self._new_manager()
+        self._create_game(manager, "g-branch-move", seed=2)
+        session = manager.get_game("g-branch-move")
+        board = {item.tile_id: item for item in session.board}
+        board["T00"].next_tile_ids = ["T01"]
+        board["T01"].next_tile_ids = ["T02"]
+        board["T02"].next_tile_ids = ["T03", "T04"]
+        board["T03"].next_tile_ids = ["T05"]
+        board["T04"].next_tile_ids = ["T06"]
+
+        session.players[0].route_preference_tile_id = "T04"
+        with patch.object(session.rng, "randint", return_value=3):
+            accepted, _, _ = manager.apply_action("g-branch-move", "p1", "roll_dice", {})
+        self.assertTrue(accepted)
+
+        state = manager.state("g-branch-move")
+        p1 = next(item for item in state.players if item.player_id == "p1")
+        self.assertEqual(p1.current_tile_id, "T04")
 
 
 if __name__ == "__main__":

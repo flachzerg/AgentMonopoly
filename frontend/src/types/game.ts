@@ -14,6 +14,8 @@ export type PlayerSnapshot = {
   deposit: number;
   net_worth: number;
   position: number;
+  current_tile_id: string | null;
+  route_preference_tile_id: string | null;
   property_ids: string[];
   alliance_with: string | null;
   alive: boolean;
@@ -28,6 +30,7 @@ export type TileState = {
   owner_id: string | null;
   property_price: number | null;
   toll: number | null;
+  next_tile_ids: string[];
 };
 
 export type EventRecord = {

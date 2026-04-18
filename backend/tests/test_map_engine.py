@@ -11,8 +11,8 @@ from app.map_engine import default_map_path, load_map_definition, load_runtime_b
 
 class MapEngineTestCase(unittest.TestCase):
     def test_load_default_map_definition(self) -> None:
-        payload = load_map_definition()
-        self.assertEqual(payload["meta"]["map_id"], "default")
+        payload = load_map_definition(default_map_path())
+        self.assertEqual(payload["meta"]["map_id"], "loop16")
         self.assertEqual(payload["meta"]["track_length"], 16)
         self.assertEqual(len(payload["tiles"]), 16)
 
@@ -71,6 +71,38 @@ class MapEngineTestCase(unittest.TestCase):
 
     def test_default_map_file_exists(self) -> None:
         self.assertTrue(default_map_path().exists())
+
+    def test_validate_rejects_unknown_next_tile_reference(self) -> None:
+        payload = {
+            "meta": {"map_id": "x", "track_length": 2},
+            "tiles": [
+                {
+                    "tile_id": "T00",
+                    "tile_index": 0,
+                    "tile_type": "START",
+                    "name": "A",
+                    "next_tile_ids": ["T99"],
+                    "render": {"x": 0, "y": 0, "w": 10, "h": 10},
+                },
+                {
+                    "tile_id": "T01",
+                    "tile_index": 1,
+                    "tile_type": "EMPTY",
+                    "name": "B",
+                    "render": {"x": 20, "y": 0, "w": 10, "h": 10},
+                },
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "references unknown tile"):
+            validate_map_definition(payload)
+
+    def test_load_branch_map_definition(self) -> None:
+        branch_map = default_map_path().parents[0] / "board.02_basic_branch.json"
+        payload = load_map_definition(branch_map)
+        self.assertEqual(payload["meta"]["map_id"], "branch18")
+        self.assertEqual(payload["meta"]["track_length"], 18)
+        branch_tile = next(item for item in payload["tiles"] if item["tile_id"] == "T03")
+        self.assertEqual(sorted(branch_tile["next_tile_ids"]), ["T04A", "T04B"])
 
 
 if __name__ == "__main__":
