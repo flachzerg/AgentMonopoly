@@ -1,7 +1,7 @@
 {
   "provider": "openai-compatible",
   "base_url": "https://openrouter.ai/api/v1",
-  "api_key": "",
+  "api_key": "YOUR_API_KEY",
   "default_timeout_sec": 8,
   "default_max_retries": 2,
   "models_checked_at": "2026-04-18",

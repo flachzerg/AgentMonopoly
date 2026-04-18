@@ -36,176 +36,150 @@ AgentMonopoly/
   backend/                     # FastAPI 服务
     app/
     config/
-      openrouter_agent_config.template.json
-      openrouter_agent_config.local.json   # 本地私有配置（git ignore）
+      agent_options.template.json          # 统一模板（可提交）
+      agent_options.local.json             # 本地私有配置（git ignore）
   frontend/                    # React 前端
   docs/                        # PRD / Roadmap / 开发文档
 ```
 
-## 前置依赖
+## 依赖与环境配置
+
+### 1) 前置依赖
 
 - Git
 - Node.js 20+
 - npm 10+
 - Python 3.13+（建议）
 
-## 1 分钟本地启动
-
-### 1) clone 项目
+### 2) Clone 项目
 
 ```bash
 git clone https://github.com/flachzerg/AgentMonopoly.git
 cd AgentMonopoly
 ```
 
-### 2) 后端依赖安装
+### 3) 统一虚拟环境（推荐）
 
-如果你已经有项目根目录下的 `.venv-Hackathon`，可直接复用（推荐黑客松阶段）：
+推荐统一使用项目根目录的 `.venv-Hackathon`，避免 README 和命令示例出现多套环境名。
 
-```bash
-# 项目根目录执行
-./.venv-Hackathon/Scripts/python -m pip install -r backend/requirements-dev.txt
-```
-
-如果没有现成环境，再新建：
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-cp .env.example .env
-```
-
-### 3) 配置 OpenRouter（本地文件）
-
-> 前端页面不录入 API Key；密钥与 base_url 在后端本地配置文件里。
-
-```bash
-mkdir -p config
-cp config/openrouter_agent_config.template.json config/openrouter_agent_config.local.json
-```
-
-编辑 `backend/config/openrouter_agent_config.local.json`：
-
-```json
-{
-  "provider": "openai-compatible",
-  "base_url": "https://openrouter.ai/api/v1",
-  "api_key": "YOUR_OPENROUTER_KEY",
-  "default_timeout_sec": 8,
-  "default_max_retries": 2,
-  "models_checked_at": "2026-04-18",
-  "default_model": "deepseek/deepseek-chat-v3.1",
-  "model_options": [
-    "deepseek/deepseek-chat-v3.1",
-    "qwen/qwen-plus-2025-07-28",
-    "qwen/qwen3-max",
-    "qwen/qwen3-235b-a22b-2507",
-    "qwen/qwen3-coder-plus",
-    "deepseek/deepseek-v3.2",
-    "moonshotai/kimi-k2-0905",
-    "z-ai/glm-5.1",
-    "minimax/minimax-m2.7",
-    "deepseek/deepseek-r1"
-  ]
-}
-```
-
-> 当前推荐：把 `provider` 固定为 `openai-compatible`，通过不同 `base_url` + `api_key` 切换具体平台。
-
-### 3.1) Provider 配置切换（OpenRouter 优先）
-
-项目通过 `AGENT_OPTIONS_FILE` 指定后端读取的 Agent 配置文件。  
-未显式指定时，默认优先级：
-
-1. `backend/config/deepseek_agent_config.json`（若存在）
-2. `backend/config/openrouter_agent_config.local.json`
-3. `backend/config/openrouter_agent_config.template.json`
-
-推荐为团队准备两份本地配置文件：
-
-- OpenRouter（推荐默认） `backend/config/openrouter_agent_config.local.json`
-- DeepSeek（按需切换） `backend/config/deepseek_agent_config.json`
-
-切换方式（Windows PowerShell）：
+Windows（PowerShell）：
 
 ```powershell
-# 使用 OpenRouter
-$env:AGENT_OPTIONS_FILE = "C:\Users\khw\Desktop\Hackathon\backend\config\openrouter_agent_config.local.json"
-
-# 使用 DeepSeek
-$env:AGENT_OPTIONS_FILE = "C:\Users\khw\Desktop\Hackathon\backend\config\deepseek_agent_config.json"
+python -m venv .venv-Hackathon
+.\.venv-Hackathon\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
 ```
 
-然后启动后端：
-
-```powershell
-cd backend
-..\.venv-Hackathon\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-或使用一键重启脚本（会自动选择配置文件，也支持手动覆盖）：
-
-```powershell
-# Git Bash / WSL
-bash scripts/dev_restart.sh restart
-
-# 手动指定配置文件
-AGENT_OPTIONS_FILE=backend/config/openrouter_agent_config.local.json bash scripts/dev_restart.sh restart
-```
-
-检查当前生效配置：
-
-- [http://localhost:8000/games/agent-options](http://localhost:8000/games/agent-options)
-
-### 4) 启动后端
+macOS/Linux（bash/zsh）：
 
 ```bash
-cd backend
-source .venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python3 -m venv .venv-Hackathon
+./.venv-Hackathon/bin/python -m pip install -r backend/requirements-dev.txt
 ```
 
-Windows + `.venv-Hackathon`（从 `backend` 目录启动）：
+如果你已在 `backend/.venv` 有历史环境，可继续使用，但后续文档命令默认以 `.venv-Hackathon` 为准。
 
-```powershell
-..\.venv-Hackathon\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-后端健康检查：
-
-- [http://localhost:8000/health](http://localhost:8000/health)
-
-地图选项接口（供前端配置页读取）：
-
-- [http://localhost:8000/games/map-options](http://localhost:8000/games/map-options)
-
-### 5) 启动前端（新终端）
+### 4) 前端依赖安装
 
 ```bash
 cd frontend
 npm install
+cd ..
+```
+
+### 5) Agent 配置模板与本地配置
+
+> 前端页面不录入 API Key；密钥与 base_url 由后端配置文件读取。
+
+```bash
+cd backend
+cp config/agent_options.template.json config/agent_options.local.json
+# 可选：准备多份本地私有配置用于切换
+cp config/agent_options.template.json config/agent_options.openrouter.local.json
+cp config/agent_options.template.json config/agent_options.deepseek.local.json
+cd ..
+```
+
+默认模板文件：`backend/config/agent_options.template.json`（可提交到 GitHub）  
+本地文件：`backend/config/*.local.json`（已 `.gitignore`）
+
+### 6) Provider 切换（相对路径，跨电脑可用）
+
+项目通过 `AGENT_OPTIONS_FILE` 指定后端读取的配置文件。  
+未显式指定时，默认优先级：
+
+1. `backend/config/agent_options.local.json`
+2. `backend/config/deepseek_agent_config.json`（兼容历史命名）
+3. `backend/config/openrouter_agent_config.local.json`（兼容历史命名）
+4. `backend/config/agent_options.template.json`
+
+Windows（PowerShell）：
+
+```powershell
+# OpenRouter
+$env:AGENT_OPTIONS_FILE = "backend/config/agent_options.openrouter.local.json"
+
+# DeepSeek
+$env:AGENT_OPTIONS_FILE = "backend/config/agent_options.deepseek.local.json"
+```
+
+bash/zsh：
+
+```bash
+export AGENT_OPTIONS_FILE=backend/config/agent_options.openrouter.local.json
+```
+
+## 启动与自检
+
+### 1) 一键重启（推荐）
+
+脚本会先清理旧进程（端口占用 + 残留 `uvicorn/vite` 进程），再启动新服务，避免“看起来配置没生效”。
+
+```bash
+# macOS / Linux / Git Bash
+bash scripts/dev_restart.sh restart
+
+# 手动指定配置文件
+AGENT_OPTIONS_FILE=backend/config/agent_options.openrouter.local.json bash scripts/dev_restart.sh restart
+```
+
+```powershell
+# Windows PowerShell
+.\scripts\dev_restart.ps1 restart
+
+# 手动指定配置文件（相对路径）
+$env:AGENT_OPTIONS_FILE = "backend/config/agent_options.deepseek.local.json"
+.\scripts\dev_restart.ps1 restart
+```
+
+### 2) 手动启动后端
+
+Windows（PowerShell）：
+
+```powershell
+cd backend
+..\.venv-Hackathon\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+macOS/Linux（bash/zsh）：
+
+```bash
+cd backend
+../.venv-Hackathon/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### 3) 手动启动前端（新终端）
+
+```bash
+cd frontend
 npx vite --host 0.0.0.0 --port 5173
 ```
 
-打开：
+### 4) 自检
 
-- [http://localhost:5173](http://localhost:5173)
-
-### 6) 启动后 30 秒自检（强烈建议）
-
-```bash
-# 后端健康检查
-curl http://localhost:8000/health
-
-# 前端主页可访问
-curl -I http://localhost:5173/
-```
-
-期望结果：
-- 后端返回 `{"status":"ok"}`
-- 前端返回 `200`
+- 后端健康检查：[http://localhost:8000/health](http://localhost:8000/health)
+- 地图选项接口：[http://localhost:8000/games/map-options](http://localhost:8000/games/map-options)
+- 当前 Agent 配置：[http://localhost:8000/games/agent-options](http://localhost:8000/games/agent-options)
+- 前端页面：[http://localhost:5173](http://localhost:5173)
 
 ## 快速体验路径
 
@@ -250,6 +224,24 @@ npm run build
 
 ```bash
 cd backend
+../.venv-Hackathon/bin/python -m pytest
+../.venv-Hackathon/bin/python -m ruff check .
+../.venv-Hackathon/bin/python -m mypy app
+```
+
+Windows（PowerShell）：
+
+```powershell
+cd backend
+..\.venv-Hackathon\Scripts\python.exe -m pytest
+..\.venv-Hackathon\Scripts\python.exe -m ruff check .
+..\.venv-Hackathon\Scripts\python.exe -m mypy app
+```
+
+历史环境 `.venv` 兼容写法：
+
+```bash
+cd backend
 source .venv/bin/activate
 pytest
 ruff check .
@@ -272,7 +264,7 @@ A:
 
 A:
 
-- 确认 `backend/config/openrouter_agent_config.local.json` 内 `api_key` 有效
+- 确认 `backend/config/agent_options.local.json`（或你指定的本地配置）内 `api_key` 有效
 - 确认 `base_url` 为 `https://openrouter.ai/api/v1`
 - 若你在切换 Provider，确认 `AGENT_OPTIONS_FILE` 指向了期望的配置文件
 - 查看后端日志是否出现模型调用超时或鉴权失败

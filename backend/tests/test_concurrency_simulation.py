@@ -31,7 +31,9 @@ def _run_one_game(game_idx: int) -> dict:
 
         state = manager.state(game_id)
         if state.current_phase == "DECISION":
-            manager.apply_action(game_id, current, "pass", {})
+            if not state.allowed_actions:
+                continue
+            manager.apply_action(game_id, current, state.allowed_actions[0].action, {})
 
     result = manager.state(game_id)
     alive = sum(1 for item in result.players if item.alive)

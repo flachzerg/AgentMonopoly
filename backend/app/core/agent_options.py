@@ -8,8 +8,12 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = ROOT / "config" / "openrouter_agent_config.template.json"
-LOCAL_CONFIG_PATH = ROOT / "config" / "openrouter_agent_config.local.json"
+DEFAULT_CONFIG_PATH = ROOT / "config" / "agent_options.template.json"
+LOCAL_CONFIG_PATH = ROOT / "config" / "agent_options.local.json"
+LEGACY_LOCAL_CONFIG_PATHS: tuple[Path, ...] = (
+    ROOT / "config" / "openrouter_agent_config.local.json",
+    ROOT / "config" / "deepseek_agent_config.json",
+)
 DEFAULT_AGENT_MODEL = "deepseek/deepseek-chat-v3.1"
 
 
@@ -52,9 +56,13 @@ def _fallback_options() -> AgentOptions:
 def load_agent_options() -> AgentOptions:
     env_path = os.getenv("AGENT_OPTIONS_FILE", "").strip()
     if env_path:
-        cfg_path = Path(env_path).expanduser()
+        raw = Path(env_path).expanduser()
+        cfg_path = raw if raw.is_absolute() else (ROOT.parent / raw).resolve()
     else:
-        cfg_path = LOCAL_CONFIG_PATH if LOCAL_CONFIG_PATH.exists() else DEFAULT_CONFIG_PATH
+        if LOCAL_CONFIG_PATH.exists():
+            cfg_path = LOCAL_CONFIG_PATH
+        else:
+            cfg_path = next((item for item in LEGACY_LOCAL_CONFIG_PATHS if item.exists()), DEFAULT_CONFIG_PATH)
     if not cfg_path.exists():
         return _fallback_options()
 

@@ -35,8 +35,6 @@ VALID_ACTIONS = {
     "propose_alliance",
     "accept_alliance",
     "reject_alliance",
-    "set_route_preference",
-    "pass",
 }
 MANDATORY_HUMAN_ACTIONS = {"event_choice", "accept_alliance", "reject_alliance"}
 
@@ -215,7 +213,9 @@ class GameManager:
         merged_args = option.default_args | args
         event = self._execute_action(session, current_player, action, merged_args)
 
-        if session.current_phase == "DECISION" and action not in {"roll_dice", "set_route_preference"}:
+        if action == "roll_dice" and session.current_phase == "DECISION" and not session.allowed_actions:
+            self._finalize_turn(session, decision_audit)
+        elif session.current_phase == "DECISION" and action != "roll_dice":
             self._finalize_turn(session, decision_audit)
 
         return True, "action accepted", event
@@ -284,13 +284,10 @@ class GameManager:
             return [item for item in session.allowed_actions if item.action == "roll_dice"]
         if session.current_phase != "DECISION":
             return []
-        has_route_preference = any(item.action == "set_route_preference" for item in session.allowed_actions)
         return [
             item
             for item in session.allowed_actions
             if item.action in MANDATORY_HUMAN_ACTIONS
-            or item.action == "set_route_preference"
-            or (has_route_preference and item.action == "pass")
         ]
 
     def human_wait_reason(self, session: GameSession) -> str:
@@ -481,20 +478,6 @@ class GameManager:
                 },
             )
 
-        if action == "set_route_preference":
-            target_tile_id = str(args["target_tile_id"])
-            player.route_preference_tile_id = target_tile_id
-            session.allowed_actions = self._allowed_actions(session)
-            return self._append_event(
-                session,
-                "action.accepted",
-                {
-                    "player_id": player.player_id,
-                    "action": action,
-                    "target_tile_id": target_tile_id,
-                },
-            )
-
         if action == "propose_alliance":
             target_id = str(args["target_player_id"])
             target = self._find_player(session, target_id)
@@ -550,7 +533,11 @@ class GameManager:
                 {"player_id": player.player_id, "requester_player_id": requester_id},
             )
 
-        return self._append_event(session, "action.accepted", {"player_id": player.player_id, "action": "pass"})
+        return self._append_event(
+            session,
+            "action.rejected",
+            {"player_id": player.player_id, "action": action, "reason": "unhandled_action"},
+        )
 
     def _roll_and_settle(self, session: GameSession, player: Player) -> EventRecord:
         session.current_phase = "TILE_ENTER"
@@ -752,13 +739,13 @@ class GameManager:
     def _allowed_actions(self, session: GameSession) -> list[ActionOption]:
         player = session.players[session.current_player_index]
         if not player.alive:
-            return [ActionOption(action="pass", description="Pass")]
+            return []
 
         if session.current_phase == "ROLL":
             return [ActionOption(action="roll_dice", description="Roll dice", required_args=[])]
 
         if session.current_phase != "DECISION":
-            return [ActionOption(action="pass", description="Pass", required_args=[])]
+            return []
 
         tile = self._active_tile(session, player)
         subtype = resolve_tile_subtype(tile, player)
@@ -822,19 +809,6 @@ class GameManager:
                 )
             )
 
-        branch_targets = self._branch_targets_within_steps(session, player, lookahead=6)
-        branch_targets = [item for item in branch_targets if item != player.route_preference_tile_id]
-        if branch_targets:
-            options.append(
-                ActionOption(
-                    action="set_route_preference",
-                    description="Set route preference for nearby branch",
-                    required_args=["target_tile_id"],
-                    allowed_values={"target_tile_id": branch_targets},
-                    default_args={"target_tile_id": branch_targets[0]},
-                )
-            )
-
         target_players = [
             item.player_id
             for item in session.players
@@ -876,7 +850,6 @@ class GameManager:
                 )
             )
 
-        options.append(ActionOption(action="pass", description="Pass"))
         return options
 
     def _validate_args(self, option: ActionOption, args: dict[str, Any]) -> bool:

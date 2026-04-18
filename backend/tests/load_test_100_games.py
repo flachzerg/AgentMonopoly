@@ -29,7 +29,9 @@ def simulate_game(game_idx: int, rounds: int = 30) -> dict:
         if state.current_phase == "ROLL":
             manager.apply_action(game_id, current, "roll_dice", {})
         else:
-            manager.apply_action(game_id, current, "pass", {})
+            if not state.allowed_actions:
+                continue
+            manager.apply_action(game_id, current, state.allowed_actions[0].action, {})
 
     latency_ms = (time.perf_counter() - start) * 1000
     return {"game_id": game_id, "latency_ms": latency_ms}

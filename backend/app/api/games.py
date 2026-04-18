@@ -375,7 +375,7 @@ async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_hu
     _manager.advance_to_decision_if_needed(game_id, player_id)
     state = _manager.state(game_id)
     if state.current_player_id != player_id:
-        return False, "not current player", ActionResponse(accepted=False, message="not current player", state=state)
+        return True, "turn advanced", ActionResponse(accepted=True, message="turn advanced", state=state)
     if state.current_phase != "DECISION":
         return False, "phase not decision", ActionResponse(accepted=False, message="phase not decision", state=state)
 

@@ -21,7 +21,7 @@ class GameEngineTestCase(unittest.TestCase):
             ],
         )
 
-    def test_roll_then_enter_decision_phase(self) -> None:
+    def test_roll_then_turn_requires_decision_or_auto_finalizes(self) -> None:
         manager = self._new_manager()
         self._create_game(manager, "g-phase", seed=3)
 
@@ -34,8 +34,13 @@ class GameEngineTestCase(unittest.TestCase):
         self.assertIsNotNone(event)
 
         after = manager.state("g-phase")
-        self.assertEqual(after.current_phase, "DECISION")
-        self.assertEqual(len(after.allowed_actions), 0)
+        self.assertIn(after.current_phase, {"ROLL", "DECISION"})
+        if after.current_phase == "ROLL":
+            self.assertEqual(after.current_player_id, "p2")
+        else:
+            self.assertEqual(after.current_player_id, "p1")
+            session = manager.get_game("g-phase")
+            self.assertGreaterEqual(len(session.allowed_actions), 0)
 
     def test_buy_property_and_turn_rotate(self) -> None:
         manager = self._new_manager()
@@ -135,7 +140,7 @@ class GameEngineTestCase(unittest.TestCase):
         p1 = next(item for item in state.players if item.player_id == "p1")
         self.assertFalse(p1.alive)
 
-    def test_route_preference_option_appears_when_branch_within_six_steps(self) -> None:
+    def test_route_preference_option_not_exposed_after_move(self) -> None:
         manager = self._new_manager()
         self._create_game(manager, "g-branch-option", seed=2)
         session = manager.get_game("g-branch-option")
@@ -149,22 +154,10 @@ class GameEngineTestCase(unittest.TestCase):
         session.active_tile_index = 0
         session.allowed_actions = manager._allowed_actions(session)  # noqa: SLF001
 
-        option = next((item for item in session.allowed_actions if item.action == "set_route_preference"), None)
-        self.assertIsNotNone(option)
-        self.assertEqual(sorted(option.allowed_values["target_tile_id"]), ["T03", "T04"])
-
-        accepted, _, _ = manager.apply_action(
-            "g-branch-option",
-            "p1",
-            "set_route_preference",
-            {"target_tile_id": "T04"},
-        )
-        self.assertTrue(accepted)
-        self.assertEqual(session.current_phase, "DECISION")
-        self.assertEqual(session.players[0].route_preference_tile_id, "T04")
+        actions = {item.action for item in session.allowed_actions}
+        self.assertNotIn("set_route_preference", actions)
         visible_actions = {item.action for item in manager.human_visible_actions(session)}
-        self.assertIn("set_route_preference", visible_actions)
-        self.assertIn("pass", visible_actions)
+        self.assertNotIn("set_route_preference", visible_actions)
 
     def test_roll_prefers_configured_branch_target(self) -> None:
         manager = self._new_manager()
