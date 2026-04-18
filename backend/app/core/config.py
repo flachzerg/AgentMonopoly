@@ -1,7 +1,9 @@
-﻿import os
+from __future__ import annotations
+
+import os
 from functools import lru_cache
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Settings(BaseModel):
@@ -9,6 +11,12 @@ class Settings(BaseModel):
     backend_host: str = os.getenv("BACKEND_HOST", "0.0.0.0")
     backend_port: int = int(os.getenv("BACKEND_PORT", "8000"))
     allowed_origins: list[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+    model_provider: str = os.getenv("MODEL_PROVIDER", "heuristic")
+    model_base_url: str = os.getenv("MODEL_BASE_URL", "https://api.openai.com/v1")
+    model_api_key: str = os.getenv("MODEL_API_KEY", "")
+    model_name: str = os.getenv("MODEL_NAME", "gpt-4o-mini")
+    model_timeout_sec: float = Field(default=float(os.getenv("MODEL_TIMEOUT_SEC", "8")))
+    model_max_retries: int = Field(default=int(os.getenv("MODEL_MAX_RETRIES", "2")))
 
 
 @lru_cache
