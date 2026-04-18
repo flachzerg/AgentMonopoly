@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ModelAvatar } from "../components/ModelAvatar";
+import { DEFAULT_AGENT_MODEL, FALLBACK_MODELS } from "../constants/agentModels";
 import { SetupPreviewPanel } from "../components/SetupPreviewPanel";
 import { inferModelTag, saveGamePlayerProfiles } from "../lib/modelAvatar";
 import { gamesApi } from "../services/api";
@@ -14,19 +15,6 @@ type PlayerDraft = {
   is_agent: boolean;
   model: string;
 };
-
-const FALLBACK_MODELS = [
-  "qwen/qwen-plus-2025-07-28",
-  "qwen/qwen3-max",
-  "qwen/qwen3-235b-a22b-2507",
-  "qwen/qwen3-coder-plus",
-  "deepseek/deepseek-chat-v3.1",
-  "deepseek/deepseek-v3.2",
-  "moonshotai/kimi-k2-0905",
-  "z-ai/glm-5.1",
-  "minimax/minimax-m2.7",
-  "deepseek/deepseek-r1",
-];
 
 const MAP_ASSET_LABELS: Record<string, string> = {
   default: "default · 经典城市场景",
@@ -66,10 +54,13 @@ export default function SetupPage() {
     if (agentOptions && agentOptions.model_options.length > 0) {
       return agentOptions.model_options;
     }
+    if (agentOptions?.default_model) {
+      return [agentOptions.default_model];
+    }
     return FALLBACK_MODELS;
   }, [agentOptions]);
 
-  const defaultModel = models[0] ?? "qwen/qwen-plus-2025-07-28";
+  const defaultModel = agentOptions?.default_model ?? models[0] ?? DEFAULT_AGENT_MODEL;
   const availableMapAssets = mapOptions?.map_assets?.length ? mapOptions.map_assets : ["default", "theme2"];
 
   const mapAssetLabel = useMemo(() => {
@@ -106,11 +97,22 @@ export default function SetupPage() {
 
   useEffect(() => {
     setPlayers((current) => {
+      const validModels = new Set(models);
       if (current.length === 0) {
         return createDefaultPlayers(maxPlayers, defaultModel);
       }
       if (current.length === maxPlayers) {
-        return current;
+        const normalized = current.map((item) => {
+          if (!item.is_agent) {
+            return item;
+          }
+          if (!item.model || !validModels.has(item.model)) {
+            return { ...item, model: defaultModel };
+          }
+          return item;
+        });
+        const changed = normalized.some((item, idx) => item.model !== current[idx].model);
+        return changed ? normalized : current;
       }
       if (current.length > maxPlayers) {
         return current.slice(0, maxPlayers);

@@ -284,10 +284,13 @@ class GameManager:
             return [item for item in session.allowed_actions if item.action == "roll_dice"]
         if session.current_phase != "DECISION":
             return []
+        has_route_preference = any(item.action == "set_route_preference" for item in session.allowed_actions)
         return [
             item
             for item in session.allowed_actions
-            if item.action in MANDATORY_HUMAN_ACTIONS or item.action == "set_route_preference"
+            if item.action in MANDATORY_HUMAN_ACTIONS
+            or item.action == "set_route_preference"
+            or (has_route_preference and item.action == "pass")
         ]
 
     def human_wait_reason(self, session: GameSession) -> str:

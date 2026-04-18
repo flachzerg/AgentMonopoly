@@ -11,7 +11,7 @@ from fastapi.responses import PlainTextResponse
 from app.agent_runtime import AgentRuntime, RuntimeConfig, TurnBuildInput
 from app.agent_memory import AgentMemoryStore
 from app.context_builder import AgentContextBuilder
-from app.core.agent_options import load_agent_options
+from app.core.agent_options import default_model_name, load_agent_options
 from app.game_engine import GameManager
 from app.map_engine import default_map_path, list_map_paths, map_asset_from_path
 from app.model_experience import ModelExperienceStore, build_experience_summary
@@ -138,7 +138,7 @@ def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
     cfg = player.agent_config
     default_cfg = RuntimeConfig(
         model_provider=_agent_options.provider,
-        model_name=(_agent_options.model_options[0] if _agent_options.model_options else "qwen/qwen-plus-2025-07-28"),
+        model_name=default_model_name(_agent_options),
         model_base_url=_agent_options.base_url,
         model_api_key=_agent_options.api_key,
         timeout_sec=_agent_options.default_timeout_sec,
@@ -659,5 +659,6 @@ def get_agent_options() -> dict[str, Any]:
         "provider": _agent_options.provider,
         "base_url": _agent_options.base_url,
         "models_checked_at": _agent_options.models_checked_at,
+        "default_model": _agent_options.default_model,
         "model_options": _agent_options.model_options,
     }

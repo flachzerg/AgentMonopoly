@@ -21,6 +21,7 @@
   - 视觉升级：自适应等分点贝塞尔（Cubic Bezier）平滑连线，正方形 100x100 地块完美居中文字，拥有者状态颜色区分，棋子四角分布。
   - 多样化内置地图：包含大单环、多分支、复杂交叉网络以及专为展示对称曲线之美设计的 `bezier_showcase` 地图。
 - 地图链路已全打通：`Setup` 下拉读取后端地图清单，建局请求传入 `map_asset`，后端按地图构建棋盘并在 `state.map_asset` 回传给前端渲染层。
+- Agent 上下文管理系统已重构：每回合统一构建 `agent_context`（`static_map` / `dynamic_state` / `recent_actions_3turns` / `memory_context`）并通过 `state.sync` 下发前端，支持在决策面板折叠查看。
 
 ## 技术栈
 
@@ -95,12 +96,13 @@ cp config/openrouter_agent_config.template.json config/openrouter_agent_config.l
   "default_timeout_sec": 8,
   "default_max_retries": 2,
   "models_checked_at": "2026-04-18",
+  "default_model": "deepseek/deepseek-chat-v3.1",
   "model_options": [
+    "deepseek/deepseek-chat-v3.1",
     "qwen/qwen-plus-2025-07-28",
     "qwen/qwen3-max",
     "qwen/qwen3-235b-a22b-2507",
     "qwen/qwen3-coder-plus",
-    "deepseek/deepseek-chat-v3.1",
     "deepseek/deepseek-v3.2",
     "moonshotai/kimi-k2-0905",
     "z-ai/glm-5.1",
@@ -109,6 +111,53 @@ cp config/openrouter_agent_config.template.json config/openrouter_agent_config.l
   ]
 }
 ```
+
+> 当前推荐：把 `provider` 固定为 `openai-compatible`，通过不同 `base_url` + `api_key` 切换具体平台。
+
+### 3.1) Provider 配置切换（OpenRouter 优先）
+
+项目通过 `AGENT_OPTIONS_FILE` 指定后端读取的 Agent 配置文件。  
+未显式指定时，默认优先级：
+
+1. `backend/config/deepseek_agent_config.json`（若存在）
+2. `backend/config/openrouter_agent_config.local.json`
+3. `backend/config/openrouter_agent_config.template.json`
+
+推荐为团队准备两份本地配置文件：
+
+- OpenRouter（推荐默认） `backend/config/openrouter_agent_config.local.json`
+- DeepSeek（按需切换） `backend/config/deepseek_agent_config.json`
+
+切换方式（Windows PowerShell）：
+
+```powershell
+# 使用 OpenRouter
+$env:AGENT_OPTIONS_FILE = "C:\Users\khw\Desktop\Hackathon\backend\config\openrouter_agent_config.local.json"
+
+# 使用 DeepSeek
+$env:AGENT_OPTIONS_FILE = "C:\Users\khw\Desktop\Hackathon\backend\config\deepseek_agent_config.json"
+```
+
+然后启动后端：
+
+```powershell
+cd backend
+..\.venv-Hackathon\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+或使用一键重启脚本（会自动选择配置文件，也支持手动覆盖）：
+
+```powershell
+# Git Bash / WSL
+bash scripts/dev_restart.sh restart
+
+# 手动指定配置文件
+AGENT_OPTIONS_FILE=backend/config/openrouter_agent_config.local.json bash scripts/dev_restart.sh restart
+```
+
+检查当前生效配置：
+
+- [http://localhost:8000/games/agent-options](http://localhost:8000/games/agent-options)
 
 ### 4) 启动后端
 
@@ -166,6 +215,27 @@ curl -I http://localhost:5173/
 4. 点击“开始对局”进入 `/game/:gameId`
 5. 对局完成后进入 `/replay/:gameId` 查看全局复盘
 
+## Agent 上下文管理系统（重构后）
+
+### 决策链路
+
+1. `games.py` 在回合开始调用 `context_builder.py` 统一构建上下文
+2. `agent_runtime.py` 渲染 prompt 并调用模型（保留 `## Turn Input JSON` 机器可读块）
+3. `game_engine.py` 校验动作合法性并推进状态
+4. WebSocket `state.sync` 广播 `agent_context` + `audit` 到前端
+
+### 上下文结构
+
+- `static_map`：棋盘拓扑与边（跨回合稳定）
+- `dynamic_state`：当前回合快照（含前方分支路径和风险提示）
+- `recent_actions_3turns`：最近三回合结构化动作 + thought
+- `memory_context`：短期/长期记忆摘要
+- `options`：动作白名单与参数约束（最终执行裁决基线）
+
+### 前端可视化
+
+- 对局页 `DecisionCenter` 的折叠区可查看完整 `agent_context` 包，用于调试与回放分析。
+
 ## 常用命令
 
 ### 前端
@@ -204,6 +274,7 @@ A:
 
 - 确认 `backend/config/openrouter_agent_config.local.json` 内 `api_key` 有效
 - 确认 `base_url` 为 `https://openrouter.ai/api/v1`
+- 若你在切换 Provider，确认 `AGENT_OPTIONS_FILE` 指向了期望的配置文件
 - 查看后端日志是否出现模型调用超时或鉴权失败
 
 ### Q3: 我只想体验本地规则，不走远端模型

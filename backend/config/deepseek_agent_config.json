@@ -1,0 +1,13 @@
+{
+  "provider": "deepseek",
+  "base_url": "https://api.deepseek.com",
+  "api_key": "sk-4d0cf5ec843d467ca7504272fc2a6ccc",
+  "default_timeout_sec": 8,
+  "default_max_retries": 2,
+  "models_checked_at": "2026-04-18",
+  "default_model": "deepseek-chat",
+  "model_options": [
+    "deepseek-chat",
+    "deepseek-reasoner"
+  ]
+}

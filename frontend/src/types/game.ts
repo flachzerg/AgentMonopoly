@@ -193,6 +193,7 @@ export type AgentOptions = {
   provider: string;
   base_url: string;
   models_checked_at: string;
+  default_model?: string;
   model_options: string[];
 };
 

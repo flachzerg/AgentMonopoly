@@ -162,6 +162,9 @@ class GameEngineTestCase(unittest.TestCase):
         self.assertTrue(accepted)
         self.assertEqual(session.current_phase, "DECISION")
         self.assertEqual(session.players[0].route_preference_tile_id, "T04")
+        visible_actions = {item.action for item in manager.human_visible_actions(session)}
+        self.assertIn("set_route_preference", visible_actions)
+        self.assertIn("pass", visible_actions)
 
     def test_roll_prefers_configured_branch_target(self) -> None:
         manager = self._new_manager()

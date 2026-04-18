@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.agent_options import DEFAULT_AGENT_MODEL
+
 TURN_IN_PROTOCOL: Literal["DY-MONO-TURN-IN/3.1"] = "DY-MONO-TURN-IN/3.1"
 TURN_OUT_PROTOCOL: Literal["DY-MONO-TURN-OUT/3.1"] = "DY-MONO-TURN-OUT/3.1"
 TURN_PHASE_CHAIN: tuple[str, ...] = (
@@ -242,7 +244,7 @@ class AgentDecisionEnvelope(StrictModel):
 
 class AgentConfig(StrictModel):
     provider: str = "openai-compatible"
-    model: str = "qwen/qwen-plus-2025-07-28"
+    model: str = DEFAULT_AGENT_MODEL
     base_url: str = "https://openrouter.ai/api/v1"
     api_key: str = ""
     timeout_sec: float = Field(default=8, gt=0.5, le=60)
