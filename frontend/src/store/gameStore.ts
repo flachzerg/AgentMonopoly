@@ -14,11 +14,15 @@ import type {
 } from "../types/game";
 
 type AgentStreamEntry = {
+  id: string;
   ts: string;
-  modelTag: string;
+  playerId: string;
+  playerName: string;
+  avatar: string;
   action: string;
-  status: "ok" | "fallback";
-  summary: string;
+  modelTag: string;
+  status: "streaming" | "ok" | "fallback";
+  thought: string;
 };
 
 type GameStore = {
@@ -56,6 +60,7 @@ type GameStore = {
 
 const MAX_TIMELINE_SIZE = 250;
 const MAX_AGENT_STREAM = 80;
+const AVATARS = ["🤖", "🦊", "🐼", "🐯", "🐧", "🦁", "🐨", "🦄"];
 
 function appendTimeline(current: EventRecord[], incoming: EventRecord[]): EventRecord[] {
   const seen = new Set(current.map((item) => item.event_id));
@@ -73,22 +78,117 @@ function appendTimeline(current: EventRecord[], incoming: EventRecord[]): EventR
   return merged.slice(merged.length - MAX_TIMELINE_SIZE);
 }
 
+function avatarForPlayer(playerId: string): string {
+  let hash = 0;
+  for (const char of playerId) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return AVATARS[hash % AVATARS.length];
+}
+
 function appendAgentStream(current: AgentStreamEntry[], audit: DecisionAudit | null | undefined): AgentStreamEntry[] {
   if (!audit) {
     return current;
   }
+  const thought = audit.final_decision.thought ?? "";
+  const thoughtMatchIndex =
+    thought.length > 0
+      ? current.findIndex(
+          (item) => item.thought === thought && (item.status === "streaming" || item.status === "ok") && !item.action
+        )
+      : -1;
+  if (thoughtMatchIndex >= 0) {
+    const next = [...current];
+    next[thoughtMatchIndex] = {
+      ...next[thoughtMatchIndex],
+      ts: new Date().toISOString(),
+      action: audit.final_decision.action,
+      modelTag: audit.model_tag,
+      status: audit.status,
+    };
+    return next;
+  }
+  const existingIndex = current.findIndex((item) => item.id === `audit:${audit.prompt_hash}`);
+  if (existingIndex >= 0) {
+    const next = [...current];
+    next[existingIndex] = {
+      ...next[existingIndex],
+      ts: new Date().toISOString(),
+      action: audit.final_decision.action,
+      modelTag: audit.model_tag,
+      status: audit.status,
+      thought: thought || next[existingIndex].thought,
+    };
+    return next;
+  }
   const entry: AgentStreamEntry = {
+    id: `audit:${audit.prompt_hash}`,
     ts: new Date().toISOString(),
-    modelTag: audit.model_tag,
+    playerId: "agent",
+    playerName: "Agent",
+    avatar: avatarForPlayer("agent"),
     action: audit.final_decision.action,
+    modelTag: audit.model_tag,
     status: audit.status,
-    summary: audit.raw_response_summary,
+    thought: thought || audit.raw_response_summary,
   };
   const merged = [...current, entry];
   if (merged.length <= MAX_AGENT_STREAM) {
     return merged;
   }
   return merged.slice(merged.length - MAX_AGENT_STREAM);
+}
+
+function upsertThoughtDelta(current: AgentStreamEntry[], payload: WsStateSyncPayload): AgentStreamEntry[] {
+  if (!payload.player_id || typeof payload.turn_index !== "number" || !payload.delta) {
+    return current;
+  }
+  const id = `thought:${payload.player_id}:${payload.turn_index}`;
+  const playerId = payload.player_id;
+  const playerName = payload.player_name || payload.player_id;
+  const index = current.findIndex((item) => item.id === id);
+  if (index >= 0) {
+    const next = [...current];
+    next[index] = {
+      ...next[index],
+      ts: payload.ts || new Date().toISOString(),
+      thought: `${next[index].thought}${payload.delta}`,
+      status: "streaming",
+    };
+    return next;
+  }
+  const entry: AgentStreamEntry = {
+    id,
+    ts: payload.ts || new Date().toISOString(),
+    playerId,
+    playerName,
+    avatar: avatarForPlayer(playerId),
+    action: "",
+    modelTag: "",
+    status: "streaming",
+    thought: payload.delta,
+  };
+  const merged = [...current, entry];
+  return merged.length <= MAX_AGENT_STREAM ? merged : merged.slice(merged.length - MAX_AGENT_STREAM);
+}
+
+function completeThought(current: AgentStreamEntry[], payload: WsStateSyncPayload): AgentStreamEntry[] {
+  if (!payload.player_id || typeof payload.turn_index !== "number") {
+    return current;
+  }
+  const id = `thought:${payload.player_id}:${payload.turn_index}`;
+  const index = current.findIndex((item) => item.id === id);
+  if (index < 0) {
+    return current;
+  }
+  const next = [...current];
+  next[index] = {
+    ...next[index],
+    ts: payload.ts || new Date().toISOString(),
+    thought: payload.full_text || next[index].thought,
+    status: "ok",
+  };
+  return next;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -188,6 +288,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       onMessage: (payload: WsStateSyncPayload) => {
         if (payload.type === "error") {
           set({ error: payload.message ?? "ws error" });
+          return;
+        }
+        if (payload.type === "agent.thought.delta") {
+          set((current) => ({
+            agentStream: upsertThoughtDelta(current.agentStream, payload),
+          }));
+          return;
+        }
+        if (payload.type === "agent.thought.done") {
+          set((current) => ({
+            agentStream: completeThought(current.agentStream, payload),
+          }));
           return;
         }
         set((current) => {

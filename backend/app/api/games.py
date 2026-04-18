@@ -1,4 +1,6 @@
+import asyncio
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
@@ -24,6 +26,9 @@ from app.ws_manager import ws_manager
 router = APIRouter(prefix="/games", tags=["games"])
 _manager = GameManager()
 _agent_options = load_agent_options()
+_THOUGHT_STREAM_MODE = os.getenv("THOUGHT_STREAM_MODE", "summary").strip().lower()
+_THOUGHT_STREAM_DELAY_MS = max(0, int(os.getenv("THOUGHT_STREAM_DELAY_MS", "50")))
+_THOUGHT_STREAM_MAX_LEN = max(0, int(os.getenv("THOUGHT_STREAM_MAX_LEN", "1024")))
 
 
 def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
@@ -144,6 +149,81 @@ async def _broadcast_state_sync(game_id: str, event: dict[str, Any] | None = Non
     await ws_manager.broadcast(game_id, payload)
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _split_thought_chunks(text: str, max_chunk_len: int = 18) -> list[str]:
+    if not text:
+        return []
+    chunks: list[str] = []
+    current = ""
+    punctuations = {",", ".", ";", "!", "?", "，", "。", "；", "！", "？"}
+    for char in text:
+        current += char
+        if len(current) >= max_chunk_len or char in punctuations:
+            chunks.append(current)
+            current = ""
+    if current:
+        chunks.append(current)
+    return chunks
+
+
+def _normalized_thought(raw_thought: str | None) -> str:
+    text = (raw_thought or "").strip()
+    if _THOUGHT_STREAM_MAX_LEN and len(text) > _THOUGHT_STREAM_MAX_LEN:
+        text = text[: _THOUGHT_STREAM_MAX_LEN - 3] + "..."
+    if _THOUGHT_STREAM_MODE == "off":
+        return ""
+    if _THOUGHT_STREAM_MODE == "summary":
+        return (text[:117] + "...") if len(text) > 120 else text
+    return text
+
+
+async def _stream_agent_thought(
+    game_id: str,
+    player_id: str,
+    player_name: str,
+    turn_index: int,
+    thought: str,
+) -> None:
+    if not thought:
+        return
+    chunks = _split_thought_chunks(thought)
+    if not chunks:
+        return
+    total = len(chunks)
+    for idx, chunk in enumerate(chunks, start=1):
+        await ws_manager.broadcast(
+            game_id,
+            {
+                "type": "agent.thought.delta",
+                "game_id": game_id,
+                "player_id": player_id,
+                "player_name": player_name,
+                "turn_index": turn_index,
+                "seq": idx,
+                "delta": chunk,
+                "is_final": idx == total,
+                "ts": _now_iso(),
+            },
+        )
+        if _THOUGHT_STREAM_DELAY_MS:
+            await asyncio.sleep(_THOUGHT_STREAM_DELAY_MS / 1000)
+    await ws_manager.broadcast(
+        game_id,
+        {
+            "type": "agent.thought.done",
+            "game_id": game_id,
+            "player_id": player_id,
+            "player_name": player_name,
+            "turn_index": turn_index,
+            "full_text": thought,
+            "ts": _now_iso(),
+        },
+    )
+
+
 async def _run_agent_turn_once(game_id: str, player_id: str) -> tuple[bool, str, ActionResponse]:
     _manager.advance_to_decision_if_needed(game_id, player_id)
     state = _manager.state(game_id)
@@ -155,6 +235,17 @@ async def _run_agent_turn_once(game_id: str, player_id: str) -> tuple[bool, str,
     runtime = _runtime_for_player(game_id, player_id)
     turn_input = _build_turn_input_v2(game_id, runtime)
     envelope = runtime.decide(turn_input)
+    thought_text = _normalized_thought(envelope.decision.thought)
+    session = _manager.get_game(game_id)
+    current = next(item for item in session.players if item.player_id == player_id)
+    player_name = current.name
+    await _stream_agent_thought(
+        game_id=game_id,
+        player_id=player_id,
+        player_name=player_name,
+        turn_index=turn_input.turn_meta.turn_index,
+        thought=thought_text,
+    )
     accepted, message, event = _manager.apply_action(
         game_id=game_id,
         player_id=player_id,

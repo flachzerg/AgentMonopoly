@@ -13,6 +13,8 @@
 - AI Provider 已默认接到 OpenRouter（后端读取本地配置文件）
 - 前端无需展示 API Key / base URL，用户仅需选择模型
 - 支持 AI 单步决策与自动推进
+- 已支持 Agent `thought` 伪流式输出（方式 A）：模型先返回完整 JSON，再通过 WebSocket 分片广播 thought
+- 对局页已接入 Agent 思维群聊视图：不同 Agent 固定头像 + 聊天气泡流式展示
 - 地图生成引擎已完成基础能力：`JSON 配置 -> SVG 生成 -> 运行时加载与回退`
 - 当前地图视觉处于工程可用阶段，已具备连线与棋子落点槽位；后续会继续纳入前端美化迭代
 
@@ -208,6 +210,9 @@ A:
 - 产品需求：[docs/PRD_OpenPlay_v2.md](docs/PRD_OpenPlay_v2.md)
 - 开发路线：[docs/Roadmap_OpenPlay_v2.md](docs/Roadmap_OpenPlay_v2.md)
 - 代码脉络：[docs/MVP_开发配置与代码脉络.md](docs/MVP_开发配置与代码脉络.md)
+- 文件路径地图（AI 快速开发）：[docs/项目文件路径地图_AI快速开发.md](docs/项目文件路径地图_AI快速开发.md)
+- Agent 输入输出协议：[docs/Agent输入输出协议.md](docs/Agent输入输出协议.md)
+- Thought 伪流式方案：[docs/Thought伪流式实现方案.md](docs/Thought伪流式实现方案.md)
 
 ## License
 

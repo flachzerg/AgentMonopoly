@@ -1,11 +1,15 @@
 import type { FC } from "react";
 
 type AgentStreamEntry = {
+  id: string;
   ts: string;
+  playerId: string;
+  playerName: string;
+  avatar: string;
+  thought: string;
   modelTag: string;
   action: string;
-  status: "ok" | "fallback";
-  summary: string;
+  status: "streaming" | "ok" | "fallback";
 };
 
 type Props = {
@@ -13,23 +17,36 @@ type Props = {
 };
 
 export const AgentStreamPanel: FC<Props> = ({ entries }) => {
-  const latest = [...entries].slice(-30).reverse();
+  const latest = [...entries].slice(-40);
 
   return (
     <section className="panel stream-panel">
-      <h2>Agent 输出流</h2>
+      <h2>Agent 思维群聊</h2>
       {latest.length === 0 ? (
-        <p className="muted">暂无 Agent 输出。</p>
+        <p className="muted">暂无 Agent 思考输出。</p>
       ) : (
         <div className="stream-list">
-          {latest.map((item, index) => (
-            <article key={`${item.ts}-${index}`} className="stream-item">
-              <header>
-                <span>{item.modelTag}</span>
-                <span className={item.status === "fallback" ? "stream-fallback" : "stream-ok"}>{item.status}</span>
-              </header>
-              <div className="stream-action">action: {item.action}</div>
-              <p>{item.summary || "(无摘要)"}</p>
+          {latest.map((item) => (
+            <article key={item.id} className="chat-row">
+              <div className="chat-avatar" title={item.playerId}>
+                {item.avatar}
+              </div>
+              <div className="chat-body">
+                <header className="chat-meta">
+                  <span className="chat-name">{item.playerName}</span>
+                  <span className={item.status === "fallback" ? "stream-fallback" : item.status === "streaming" ? "stream-streaming" : "stream-ok"}>
+                    {item.status}
+                  </span>
+                </header>
+                <div className="chat-bubble">
+                  <p>{item.thought || "..."}</p>
+                  {item.status === "streaming" ? <span className="typing-dot">...</span> : null}
+                </div>
+                <div className="stream-action">
+                  {item.action ? `-> ${item.action}` : ""}
+                  {item.modelTag ? ` (${item.modelTag})` : ""}
+                </div>
+              </div>
             </article>
           ))}
         </div>
