@@ -44,6 +44,7 @@ class ApiIntegrationTestCase(unittest.TestCase):
         )
         self.assertEqual(roll.status_code, 200)
         self.assertTrue(roll.json()["accepted"])
+        self.assertIn(roll.json()["message"], {"waiting_human_roll", "waiting_human_branch_decision", "game_finished"})
 
         choose = self.client.post(
             f"/games/{game_id}/actions",
@@ -55,7 +56,7 @@ class ApiIntegrationTestCase(unittest.TestCase):
             },
         )
         self.assertEqual(choose.status_code, 200)
-        self.assertTrue(choose.json()["accepted"])
+        self.assertFalse(choose.json()["accepted"])
 
         auto = self.client.post(f"/games/{game_id}/auto-play?max_steps=10")
         self.assertEqual(auto.status_code, 200)
@@ -77,6 +78,8 @@ class ApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(summary_resp.status_code, 200)
         summary = summary_resp.json()
         self.assertIn("metrics", summary)
+        self.assertIn("recap", summary)
+        self.assertIn("prompt_materials", summary)
         self.assertIn("markdown", summary)
 
         export_resp = self.client.get(f"/games/{game_id}/replay/export")
@@ -90,22 +93,44 @@ class ApiIntegrationTestCase(unittest.TestCase):
         game_id = f"g-auto-{uuid4().hex[:8]}"
         self._create_game(game_id)
 
-        self.client.post(
-            f"/games/{game_id}/actions",
-            json={"game_id": game_id, "player_id": "p1", "action": "roll_dice", "args": {}},
-        )
-        self.client.post(
-            f"/games/{game_id}/actions",
-            json={"game_id": game_id, "player_id": "p1", "action": "pass", "args": {}},
-        )
-
         auto = self.client.post(f"/games/{game_id}/auto-play?max_steps=20")
         self.assertEqual(auto.status_code, 200)
         body = auto.json()
-        self.assertGreaterEqual(body["steps"], 1)
-        self.assertIn(body["stopped_reason"], {"human_turn", "game_finished", "max_steps"})
-        if body["stopped_reason"] == "human_turn":
+        self.assertGreaterEqual(body["steps"], 0)
+        self.assertIn(body["stopped_reason"], {"waiting_human_roll", "waiting_human_branch_decision", "game_finished", "max_steps"})
+        if body["stopped_reason"] == "waiting_human_roll":
             self.assertEqual(body["state"]["current_player_id"], "p1")
+
+    def test_strategy_versions_endpoint(self) -> None:
+        game_id = f"g-evo-{uuid4().hex[:8]}"
+        response = self.client.post(
+            "/games",
+            json={
+                "game_id": game_id,
+                "max_rounds": 4,
+                "seed": 19,
+                "players": [
+                    {"player_id": "p1", "name": "Bot-1", "is_agent": True},
+                    {"player_id": "p2", "name": "Bot-2", "is_agent": True},
+                    {"player_id": "p3", "name": "Bot-3", "is_agent": True},
+                    {"player_id": "p4", "name": "Bot-4", "is_agent": True},
+                ],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.client.post(f"/games/{game_id}/auto-play?max_steps=200")
+
+        versions = self.client.get("/games/strategy/versions")
+        self.assertEqual(versions.status_code, 200)
+        body = versions.json()
+        self.assertIn("records", body)
+        self.assertGreaterEqual(len(body["records"]), 1)
+
+        model_exp = self.client.get("/games/model-experiences?limit=20")
+        self.assertEqual(model_exp.status_code, 200)
+        model_body = model_exp.json()
+        self.assertIn("records", model_body)
+        self.assertGreaterEqual(len(model_body["records"]), 1)
 
 
 if __name__ == "__main__":

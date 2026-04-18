@@ -37,6 +37,7 @@ VALID_ACTIONS = {
     "set_route_preference",
     "pass",
 }
+MANDATORY_HUMAN_ACTIONS = {"event_choice", "accept_alliance", "reject_alliance"}
 
 
 @dataclass
@@ -167,6 +168,7 @@ class GameManager:
         action: str,
         args: dict[str, Any],
         decision_audit: AgentDecisionEnvelope | None = None,
+        enforce_human_restrictions: bool = True,
     ) -> tuple[bool, str, EventRecord | None]:
         session = self.get_game(game_id)
         if session.status != "running":
@@ -178,7 +180,11 @@ class GameManager:
         if not current_player.alive:
             return False, "current player is bankrupt", None
 
-        if not self.valid_action(action, session.allowed_actions):
+        available_actions = session.allowed_actions
+        if enforce_human_restrictions and not current_player.is_agent:
+            available_actions = self.human_visible_actions(session)
+
+        if not self.valid_action(action, available_actions):
             self._append_event(
                 session,
                 "action.rejected",
@@ -186,7 +192,7 @@ class GameManager:
             )
             return False, "action not allowed", None
 
-        option = next(item for item in session.allowed_actions if item.action == action)
+        option = next(item for item in available_actions if item.action == action)
         if not self._validate_args(option, args):
             self._append_event(
                 session,
@@ -258,6 +264,30 @@ class GameManager:
             )
             for item in session.board
         ]
+
+    def human_visible_actions(self, session: GameSession) -> list[ActionOption]:
+        player = session.players[session.current_player_index]
+        if player.is_agent:
+            return session.allowed_actions
+        if session.current_phase == "ROLL":
+            return [item for item in session.allowed_actions if item.action == "roll_dice"]
+        if session.current_phase != "DECISION":
+            return []
+        return [
+            item
+            for item in session.allowed_actions
+            if item.action in MANDATORY_HUMAN_ACTIONS or item.action == "set_route_preference"
+        ]
+
+    def human_wait_reason(self, session: GameSession) -> str:
+        player = session.players[session.current_player_index]
+        if player.is_agent:
+            return "none"
+        if session.current_phase == "ROLL":
+            return "roll_dice"
+        if session.current_phase == "DECISION" and self.human_visible_actions(session):
+            return "branch_decision"
+        return "none"
 
     def _finalize_turn(self, session: GameSession, decision_audit: AgentDecisionEnvelope | None) -> None:
         snapshot = self._to_state(session)
@@ -862,6 +892,8 @@ class GameManager:
             for item in session.board
         ]
         current_player = session.players[session.current_player_index]
+        visible_actions = session.allowed_actions if current_player.is_agent else self.human_visible_actions(session)
+        wait_reason = self.human_wait_reason(session)
         return GameState(
             game_id=session.game_id,
             status=session.status,  # type: ignore[arg-type]
@@ -873,7 +905,10 @@ class GameManager:
             active_tile_id=session.active_tile_id or self._player_tile(session, current_player).tile_id,
             players=players,
             board=board,
-            allowed_actions=session.allowed_actions,
+            allowed_actions=visible_actions,
+            minimal_human_actions=self.human_visible_actions(session) if not current_player.is_agent else [],
+            waiting_for_human=(wait_reason != "none"),
+            human_wait_reason=wait_reason,  # type: ignore[arg-type]
             last_events=session.events[-20:],
         )
 

@@ -42,15 +42,9 @@ AgentMonopoly/
 
 - `backend/app/map_engine.py`：地图 JSON 加载、校验、运行时棋盘转换
 - `backend/app/map_svg.py`：根据地图 JSON 生成 SVG 底图
-- `backend/config/maps/board.01_basic_loop.json`：默认单环地图配置
-- `backend/config/maps/board.02_basic_branch.json`：分支地图配置
-- `backend/config/maps/board.03_large_loop.json`：大单环地图配置
-- `backend/config/maps/board.04_large_branch.json`：大分支地图配置
-- `backend/config/maps/board.05_complex_branch.json`：复杂多分支交叉地图配置
-- `backend/config/maps/board.06_bezier_showcase.json`：贝塞尔曲线视觉展示专用地图配置
+- `backend/config/maps/board.default.json`：默认地图配置
+- `backend/config/maps/board.theme2.json`：第二套主题地图配置
 - `backend/scripts/generate_map_svg.py`：批量/单次生成 SVG 的 CLI 脚本
-- `scripts/generate_new_maps.py`：用于构建复杂网格分支图配置的坐标规划脚本
-- `scripts/generate_bezier.py`：专门构建展现 S 形三次贝塞尔曲线的点对称网络脚本
 
 ### 3.4 AI 相关能力
 
@@ -108,13 +102,12 @@ AgentMonopoly/
 
 - `frontend/public/maps/default.svg`：默认地图 SVG 产物
 - `frontend/public/maps/theme2.svg`：主题 2 地图 SVG 产物
-- `frontend/public/maps/branch.svg`：分支地图 SVG 产物
 
 ## 5. “我要改某个需求”直达文件索引
 
 ### 5.1 改“地图规则/格子数据”
 
-1. `backend/config/maps/board.01_basic_loop.json`（或其它地图配置文件）
+1. `backend/config/maps/board.default.json`（或 `board.theme2.json`）
 2. `backend/app/map_engine.py`（校验字段是否通过）
 3. `backend/tests/test_map_engine.py`（补充测试）
 
@@ -147,7 +140,6 @@ AgentMonopoly/
 4. `frontend/src/components/AgentStreamPanel.tsx`（群聊气泡渲染）
 5. `frontend/src/types/game.ts`（WS 事件字段类型）
 6. `docs/Thought伪流式实现方案.md`（协议与开关说明）
-7. `docs/地图生成与视觉设计经验沉淀.md`（关于分支地图的美化技巧）
 
 ### 5.5 改“配置页或复盘页”
 
@@ -176,10 +168,8 @@ AgentMonopoly/
 - 命令示例：
 
 ```bash
-python scripts/generate_map_svg.py --map config/maps/board.01_basic_loop.json --out ../frontend/public/maps/01_basic_loop.svg
-python scripts/generate_map_svg.py --map config/maps/board.02_basic_branch.json --out ../frontend/public/maps/02_basic_branch.svg
-python scripts/generate_map_svg.py --map config/maps/board.05_complex_branch.json --out ../frontend/public/maps/05_complex_branch.svg
-python scripts/generate_map_svg.py --map config/maps/board.06_bezier_showcase.json --out ../frontend/public/maps/06_bezier_showcase.svg
+python scripts/generate_map_svg.py --map config/maps/board.default.json --out ../frontend/public/maps/default.svg
+python scripts/generate_map_svg.py --map config/maps/board.theme2.json --out ../frontend/public/maps/theme2.svg
 ```
 
 ## 7. AI Agent 开发建议（减少走弯路）

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="560" viewBox="0 0 940 560" role="img" aria-label="map-theme2">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+    <filter id="tileShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect x="0" y="0" width="940" height="560" fill="url(#bgGradient)"/>
+  <rect x="10" y="10" width="920" height="540" rx="16" ry="16" fill="none" stroke="#d6dbe7" stroke-width="2"/>
+  <text x="470" y="30" text-anchor="middle" fill="#334155" font-size="16" font-family="Segoe UI, Arial">theme2 / sunset</text>
+  <g id="track-layer">
+    <path d="M 145.0 107.5 Q 235.0 107.5 325.0 107.5 Q 410.0 107.5 495.0 107.5 Q 580.0 107.5 665.0 107.5 Q 747.5 117.5 830.0 127.5 Q 830.0 182.5 830.0 237.5 Q 830.0 292.5 830.0 347.5 Q 830.0 402.5 830.0 457.5 Q 747.5 467.5 665.0 477.5 Q 580.0 477.5 495.0 477.5 Q 410.0 477.5 325.0 477.5 Q 235.0 477.5 145.0 477.5 Q 145.0 422.5 145.0 367.5 Q 145.0 312.5 145.0 257.5 Q 235.0 257.5 325.0 257.5 Q 410.0 257.5 495.0 257.5 Q 320.0 182.5 145.0 107.5" fill="none" stroke="#dbeafe" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 145.0 107.5 Q 235.0 107.5 325.0 107.5 Q 410.0 107.5 495.0 107.5 Q 580.0 107.5 665.0 107.5 Q 747.5 117.5 830.0 127.5 Q 830.0 182.5 830.0 237.5 Q 830.0 292.5 830.0 347.5 Q 830.0 402.5 830.0 457.5 Q 747.5 467.5 665.0 477.5 Q 580.0 477.5 495.0 477.5 Q 410.0 477.5 325.0 477.5 Q 235.0 477.5 145.0 477.5 Q 145.0 422.5 145.0 367.5 Q 145.0 312.5 145.0 257.5 Q 235.0 257.5 325.0 257.5 Q 410.0 257.5 495.0 257.5 Q 320.0 182.5 145.0 107.5" fill="none" stroke="#60a5fa" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  </g>
+  <g id="tile-T00" data-tile-id="T00" data-tile-index="0" data-token-slots="109.3,134.1;133.1,134.1;156.9,134.1;180.7,134.1">
+    <rect x="60.0" y="60.0" rx="10" ry="10" width="170.0" height="95.0" fill="#ffe8b5" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="145.0" y="84.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T00 · START</text>
+    <text x="145.0" y="108.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Start</text>
+    <text x="145.0" y="128.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="109.3" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="133.1" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="156.9" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="180.7" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T01" data-tile-id="T01" data-tile-index="1" data-token-slots="293.5,134.1;314.5,134.1;335.5,134.1;356.5,134.1">
+    <rect x="250.0" y="60.0" rx="10" ry="10" width="150.0" height="95.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="325.0" y="84.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T01 · PROPERTY</text>
+    <text x="325.0" y="108.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Hill Road</text>
+    <text x="325.0" y="128.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=200 toll=40</text>
+  </g>
+  <circle cx="293.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="335.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="356.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T02" data-tile-id="T02" data-tile-index="2" data-token-slots="463.5,134.1;484.5,134.1;505.5,134.1;526.5,134.1">
+    <rect x="420.0" y="60.0" rx="10" ry="10" width="150.0" height="95.0" fill="#ecf2f9" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="495.0" y="84.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T02 · EMPTY</text>
+    <text x="495.0" y="108.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Open Park</text>
+    <text x="495.0" y="128.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="463.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="484.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="505.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="526.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T03" data-tile-id="T03" data-tile-index="3" data-token-slots="633.5,134.1;654.5,134.1;675.5,134.1;696.5,134.1">
+    <rect x="590.0" y="60.0" rx="10" ry="10" width="150.0" height="95.0" fill="#cdf7df" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="665.0" y="84.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T03 · BANK</text>
+    <text x="665.0" y="108.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">City Bank</text>
+    <text x="665.0" y="128.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="633.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="654.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="675.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="696.5" cy="134.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T04" data-tile-id="T04" data-tile-index="4" data-token-slots="800.6,154.1;820.2,154.1;839.8,154.1;859.4,154.1">
+    <rect x="760.0" y="80.0" rx="10" ry="10" width="140.0" height="95.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="830.0" y="104.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T04 · EVENT</text>
+    <text x="830.0" y="128.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Event Plaza</text>
+    <text x="830.0" y="148.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="800.6" cy="154.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="820.2" cy="154.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="839.8" cy="154.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="859.4" cy="154.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T05" data-tile-id="T05" data-tile-index="5" data-token-slots="800.6,264.1;820.2,264.1;839.8,264.1;859.4,264.1">
+    <rect x="760.0" y="190.0" rx="10" ry="10" width="140.0" height="95.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="830.0" y="214.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T05 · PROPERTY</text>
+    <text x="830.0" y="238.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">River Side</text>
+    <text x="830.0" y="258.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=240 toll=48</text>
+  </g>
+  <circle cx="800.6" cy="264.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="820.2" cy="264.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="839.8" cy="264.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="859.4" cy="264.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T06" data-tile-id="T06" data-tile-index="6" data-token-slots="800.6,374.1;820.2,374.1;839.8,374.1;859.4,374.1">
+    <rect x="760.0" y="300.0" rx="10" ry="10" width="140.0" height="95.0" fill="#ecf2f9" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="830.0" y="324.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T06 · EMPTY</text>
+    <text x="830.0" y="348.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Coffee Spot</text>
+    <text x="830.0" y="368.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="800.6" cy="374.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="820.2" cy="374.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="839.8" cy="374.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="859.4" cy="374.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T07" data-tile-id="T07" data-tile-index="7" data-token-slots="800.6,484.1;820.2,484.1;839.8,484.1;859.4,484.1">
+    <rect x="760.0" y="410.0" rx="10" ry="10" width="140.0" height="95.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="830.0" y="434.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T07 · PROPERTY</text>
+    <text x="830.0" y="458.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Sunset Ave</text>
+    <text x="830.0" y="478.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=280 toll=56</text>
+  </g>
+  <circle cx="800.6" cy="484.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="820.2" cy="484.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="839.8" cy="484.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="859.4" cy="484.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T08" data-tile-id="T08" data-tile-index="8" data-token-slots="633.5,504.1;654.5,504.1;675.5,504.1;696.5,504.1">
+    <rect x="590.0" y="430.0" rx="10" ry="10" width="150.0" height="95.0" fill="#cdf7df" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="665.0" y="454.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T08 · BANK</text>
+    <text x="665.0" y="478.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Main Bank</text>
+    <text x="665.0" y="498.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="633.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="654.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="675.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="696.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T09" data-tile-id="T09" data-tile-index="9" data-token-slots="463.5,504.1;484.5,504.1;505.5,504.1;526.5,504.1">
+    <rect x="420.0" y="430.0" rx="10" ry="10" width="150.0" height="95.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="495.0" y="454.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T09 · EVENT</text>
+    <text x="495.0" y="478.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Fortune Gate</text>
+    <text x="495.0" y="498.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="463.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="484.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="505.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="526.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T10" data-tile-id="T10" data-tile-index="10" data-token-slots="293.5,504.1;314.5,504.1;335.5,504.1;356.5,504.1">
+    <rect x="250.0" y="430.0" rx="10" ry="10" width="150.0" height="95.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="325.0" y="454.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T10 · PROPERTY</text>
+    <text x="325.0" y="478.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Lake View</text>
+    <text x="325.0" y="498.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=320 toll=64</text>
+  </g>
+  <circle cx="293.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="335.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="356.5" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T11" data-tile-id="T11" data-tile-index="11" data-token-slots="109.3,504.1;133.1,504.1;156.9,504.1;180.7,504.1">
+    <rect x="60.0" y="430.0" rx="10" ry="10" width="170.0" height="95.0" fill="#ecf2f9" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="145.0" y="454.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T11 · EMPTY</text>
+    <text x="145.0" y="478.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Metro Station</text>
+    <text x="145.0" y="498.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="109.3" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="133.1" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="156.9" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="180.7" cy="504.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T12" data-tile-id="T12" data-tile-index="12" data-token-slots="109.3,394.1;133.1,394.1;156.9,394.1;180.7,394.1">
+    <rect x="60.0" y="320.0" rx="10" ry="10" width="170.0" height="95.0" fill="#d9ecff" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="145.0" y="344.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T12 · PROPERTY</text>
+    <text x="145.0" y="368.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Market Square</text>
+    <text x="145.0" y="388.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=360 toll=72</text>
+  </g>
+  <circle cx="109.3" cy="394.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="133.1" cy="394.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="156.9" cy="394.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="180.7" cy="394.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T13" data-tile-id="T13" data-tile-index="13" data-token-slots="109.3,284.1;133.1,284.1;156.9,284.1;180.7,284.1">
+    <rect x="60.0" y="210.0" rx="10" ry="10" width="170.0" height="95.0" fill="#ecf2f9" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="145.0" y="234.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T13 · EMPTY</text>
+    <text x="145.0" y="258.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Open Street</text>
+    <text x="145.0" y="278.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="109.3" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="133.1" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="156.9" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="180.7" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T14" data-tile-id="T14" data-tile-index="14" data-token-slots="293.5,284.1;314.5,284.1;335.5,284.1;356.5,284.1">
+    <rect x="250.0" y="210.0" rx="10" ry="10" width="150.0" height="95.0" fill="#ffd6ec" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="325.0" y="234.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T14 · EVENT</text>
+    <text x="325.0" y="258.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Lucky Lane</text>
+    <text x="325.0" y="278.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="293.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="314.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="335.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="356.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <g id="tile-T15" data-tile-id="T15" data-tile-index="15" data-token-slots="463.5,284.1;484.5,284.1;505.5,284.1;526.5,284.1">
+    <rect x="420.0" y="210.0" rx="10" ry="10" width="150.0" height="95.0" fill="#cdf7df" stroke="#0f172a" stroke-width="2" filter="url(#tileShadow)"/>
+    <text x="495.0" y="234.0" text-anchor="middle" fill="#0f172a" font-size="12" font-family="Segoe UI, Arial">T15 · BANK</text>
+    <text x="495.0" y="258.0" text-anchor="middle" fill="#111827" font-size="14" font-family="Segoe UI, Arial">Reserve Bank</text>
+    <text x="495.0" y="278.0" text-anchor="middle" fill="#334155" font-size="11" font-family="Consolas, monospace">price=- toll=-</text>
+  </g>
+  <circle cx="463.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="484.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="505.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+  <circle cx="526.5" cy="284.1" r="4.5" fill="#ffffff" stroke="#64748b" stroke-width="1" opacity="0.9"/>
+</svg>

@@ -40,6 +40,10 @@ class TemplateVersion:
                     "board_snapshot": turn_input.board_snapshot.model_dump(mode="json"),
                     "history_records": turn_input.history_records,
                     "memory_summary": turn_input.memory_summary,
+                    "model_experience_summary": turn_input.model_experience_summary,
+                    "strategy_profile": (
+                        turn_input.strategy_profile.model_dump(mode="json") if turn_input.strategy_profile else None
+                    ),
                 },
                 ensure_ascii=False,
                 sort_keys=True,

@@ -5,15 +5,48 @@ from pathlib import Path
 from typing import Any
 
 ALLOWED_TILE_TYPES = {"START", "PROPERTY", "EMPTY", "BANK", "EVENT", "QUIZ"}
-DEFAULT_MAP_PATH = Path(__file__).resolve().parents[1] / "config" / "maps" / "board.01_basic_loop.json"
+MAPS_DIR = Path(__file__).resolve().parents[1] / "config" / "maps"
+DEFAULT_MAP_FILENAME = "board.01_basic_loop.json"
+DEFAULT_MAP_PATH = MAPS_DIR / DEFAULT_MAP_FILENAME
 
 
 def default_map_path() -> Path:
     return DEFAULT_MAP_PATH
 
 
-def load_map_definition(path: Path | None = None) -> dict[str, Any]:
-    map_path = path or DEFAULT_MAP_PATH
+def list_map_paths() -> list[Path]:
+    if not MAPS_DIR.exists():
+        return []
+    return sorted(item for item in MAPS_DIR.glob("board.*.json") if item.is_file())
+
+
+def map_asset_from_path(path: Path) -> str:
+    stem = path.stem
+    return stem[len("board.") :] if stem.startswith("board.") else stem
+
+
+def resolve_map_path(map_asset: str | None = None, path: Path | None = None) -> Path:
+    if path is not None:
+        return path
+    if not map_asset:
+        return DEFAULT_MAP_PATH
+
+    normalized = map_asset.strip().removesuffix(".svg").removesuffix(".json")
+    if not normalized:
+        return DEFAULT_MAP_PATH
+
+    candidates = [
+        MAPS_DIR / f"board.{normalized}.json",
+        MAPS_DIR / f"{normalized}.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return DEFAULT_MAP_PATH
+
+
+def load_map_definition(path: Path | None = None, map_asset: str | None = None) -> dict[str, Any]:
+    map_path = resolve_map_path(map_asset=map_asset, path=path)
     payload = json.loads(map_path.read_text(encoding="utf-8"))
     validate_map_definition(payload)
     return payload
@@ -96,8 +129,8 @@ def validate_map_definition(payload: dict[str, Any]) -> None:
             seen_next.add(next_tile_id)
 
 
-def load_runtime_board(path: Path | None = None) -> list[dict[str, Any]]:
-    payload = load_map_definition(path)
+def load_runtime_board(path: Path | None = None, map_asset: str | None = None) -> list[dict[str, Any]]:
+    payload = load_map_definition(path=path, map_asset=map_asset)
     rows: list[dict[str, Any]] = []
     for tile in payload["tiles"]:
         rows.append(

@@ -1,7 +1,5 @@
-import asyncio
 import json
-import os
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
@@ -11,7 +9,9 @@ from fastapi.responses import PlainTextResponse
 from app.agent_runtime import AgentRuntime, RuntimeConfig, TurnBuildInput
 from app.core.agent_options import load_agent_options
 from app.game_engine import GameManager
+from app.model_experience import ModelExperienceStore, build_experience_summary
 from app.observability import log_json, metrics
+from app.replay_summary import build_replay_export
 from app.schemas import (
     ActionRequest,
     ActionResponse,
@@ -20,18 +20,30 @@ from app.schemas import (
     CreateGameRequest,
     ReplayExport,
     ReplayResponse,
+    ModelExperienceResponse,
+    StrategyVersionRecord,
+    StrategyVersionsResponse,
 )
+from app.strategy_evolution import StrategyEvolutionManager
 from app.ws_manager import ws_manager
 
 router = APIRouter(prefix="/games", tags=["games"])
 _manager = GameManager()
 _agent_options = load_agent_options()
-_THOUGHT_STREAM_MODE = os.getenv("THOUGHT_STREAM_MODE", "summary").strip().lower()
-_THOUGHT_STREAM_DELAY_MS = max(0, int(os.getenv("THOUGHT_STREAM_DELAY_MS", "50")))
-_THOUGHT_STREAM_MAX_LEN = max(0, int(os.getenv("THOUGHT_STREAM_MAX_LEN", "1024")))
+_strategy_manager = StrategyEvolutionManager()
+_experience_store = ModelExperienceStore()
+_summary_cache: dict[str, ReplayExport] = {}
+_evolved_games: set[str] = set()
 
 
-def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
+@dataclass
+class AutoAdvanceResult:
+    steps: int
+    stopped_reason: str
+    audits: list[dict[str, Any]]
+
+
+def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
     session = _manager.get_game(game_id)
     player = next(item for item in session.players if item.player_id == player_id)
     cfg = player.agent_config
@@ -43,8 +55,17 @@ def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
         timeout_sec=_agent_options.default_timeout_sec,
         max_retries=_agent_options.default_max_retries,
     )
+    if default_cfg.model_provider == "openai-compatible" and not default_cfg.model_api_key:
+        default_cfg = RuntimeConfig(
+            model_provider="heuristic",
+            model_name="heuristic",
+            model_base_url=default_cfg.model_base_url,
+            model_api_key="",
+            timeout_sec=default_cfg.timeout_sec,
+            max_retries=default_cfg.max_retries,
+        )
     if not cfg:
-        return AgentRuntime(config=default_cfg)
+        return default_cfg
 
     runtime_cfg = RuntimeConfig(
         model_provider=cfg.provider or default_cfg.model_provider,
@@ -54,27 +75,34 @@ def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
         timeout_sec=cfg.timeout_sec or default_cfg.timeout_sec,
         max_retries=cfg.max_retries,
     )
-    return AgentRuntime(config=runtime_cfg)
+    if runtime_cfg.model_provider == "openai-compatible" and not runtime_cfg.model_api_key:
+        runtime_cfg = RuntimeConfig(
+            model_provider="heuristic",
+            model_name="heuristic",
+            model_base_url=runtime_cfg.model_base_url,
+            model_api_key="",
+            timeout_sec=runtime_cfg.timeout_sec,
+            max_retries=runtime_cfg.max_retries,
+        )
+    return runtime_cfg
+
+
+def _runtime_for_player(game_id: str, player_id: str) -> AgentRuntime:
+    return AgentRuntime(config=_resolve_runtime_config(game_id, player_id))
 
 
 def _build_turn_input_v2(game_id: str, runtime: AgentRuntime):
     session = _manager.get_game(game_id)
     current = session.players[session.current_player_index]
+    runtime_cfg = _resolve_runtime_config(game_id, current.player_id)
     snapshots = _manager.build_players_snapshot(session)
     player_snapshot = next(item for item in snapshots if item.player_id == current.player_id)
-    board_tiles = _manager.build_board_snapshot(session)
-    topology = "graph" if any(len(item.next_tile_ids) > 1 for item in board_tiles) else "loop"
     payload = TurnBuildInput(
         turn_meta=_manager.build_turn_meta(session),
         tile_context=_manager.build_tile_context(session),
         player_state=player_snapshot,
         players_snapshot=snapshots,
-        board_snapshot=BoardSnapshot(
-            track_length=len(session.board),
-            topology=topology,
-            start_tile_id=next((item.tile_id for item in session.board if item.tile_type == "START"), session.board[0].tile_id),
-            tiles=board_tiles,
-        ),
+        board_snapshot=BoardSnapshot(track_length=len(session.board), tiles=_manager.build_board_snapshot(session)),
         options=session.allowed_actions,
         history_records=[
             {
@@ -84,24 +112,17 @@ def _build_turn_input_v2(game_id: str, runtime: AgentRuntime):
                 "turn_index": item.turn_index,
                 "payload": item.payload,
             }
-            for item in session.events[-20:]
+            for item in session.events[-30:]
         ],
+        model_experience_summary=_experience_store.context_for_model(runtime_cfg.model_name),
+        strategy_profile=_strategy_manager.profile_for_player(current.player_id),
     )
     return runtime.build_turn_input(payload)
 
 
-def _build_replay_export_v2(game_id: str) -> ReplayExport:
-    session = _manager.get_game(game_id)
+def _build_strategy_timeline(game_id: str) -> list[dict[str, Any]]:
     replay = _manager.replay(game_id)
-    total_turns = max(replay.total_turns, 1)
-    fallback_turns = sum(1 for step in replay.steps if step.decision_audit and step.decision_audit.status == "fallback")
-    illegal_actions = sum(
-        1
-        for event in session.events
-        if event.type == "action.rejected" and event.payload.get("reason") in {"action_not_allowed", "invalid_args"}
-    )
-    net_worths = {player.player_id: player.net_worth for player in _manager.state(game_id).players}
-    strategy_timeline = [
+    return [
         {
             "turn_index": step.turn_index,
             "round_index": step.round_index,
@@ -109,40 +130,92 @@ def _build_replay_export_v2(game_id: str) -> ReplayExport:
             "candidate_actions": step.candidate_actions,
             "strategy_tags": step.strategy_tags,
             "phase_trace": step.phase_trace,
+            "decision_audit": step.decision_audit.model_dump(mode="json") if step.decision_audit else None,
         }
         for step in replay.steps
     ]
-    metrics_payload = {
-        "total_turns": float(replay.total_turns),
-        "fallback_ratio": fallback_turns / total_turns,
-        "illegal_action_rate": illegal_actions / total_turns,
-        "top_net_worth": float(max(net_worths.values()) if net_worths else 0),
-        "avg_net_worth": float(sum(net_worths.values()) / max(len(net_worths), 1)),
-    }
-    lines = [
-        f"# Game Summary {game_id}",
-        "",
-        "## Metrics",
-        f"- total_turns: {int(metrics_payload['total_turns'])}",
-        f"- fallback_ratio: {metrics_payload['fallback_ratio']:.3f}",
-        f"- illegal_action_rate: {metrics_payload['illegal_action_rate']:.3f}",
-        f"- top_net_worth: {metrics_payload['top_net_worth']:.1f}",
-        f"- avg_net_worth: {metrics_payload['avg_net_worth']:.1f}",
-        "",
-        "## Strategy Timeline",
-    ]
-    for row in strategy_timeline[-20:]:
-        lines.append(
-            f"- turn {row['turn_index']} / round {row['round_index']} => final={row['final_action']}, "
-            f"candidates={row['candidate_actions']}, tags={row['strategy_tags']}"
-        )
-    return ReplayExport(
+
+
+def _build_replay_export_v2(game_id: str) -> ReplayExport:
+    state = _manager.state(game_id)
+    replay = _manager.replay(game_id)
+    session = _manager.get_game(game_id)
+    strategy_timeline = _build_strategy_timeline(game_id)
+    export = build_replay_export(
         game_id=game_id,
-        generated_at=datetime.now(timezone.utc),
-        metrics=metrics_payload,
+        state=state,
+        replay=replay,
+        events=session.events,
         strategy_timeline=strategy_timeline,
-        markdown="\n".join(lines),
     )
+    total_turns = max(replay.total_turns, 1)
+    fallback_turns = sum(1 for step in replay.steps if step.decision_audit and step.decision_audit.status == "fallback")
+    illegal_actions = sum(
+        1
+        for event in session.events
+        if event.type == "action.rejected" and event.payload.get("reason") in {"action_not_allowed", "invalid_args"}
+    )
+    top_net_worth = max((item.net_worth for item in state.players), default=0)
+    export.metrics.update(
+        {
+            "fallback_ratio": fallback_turns / total_turns,
+            "illegal_action_rate": illegal_actions / total_turns,
+            "top_net_worth": float(top_net_worth),
+        }
+    )
+    return export
+
+
+def _finalize_if_needed(game_id: str) -> None:
+    state = _manager.state(game_id)
+    if state.status != "finished":
+        return
+
+    if game_id not in _summary_cache:
+        _summary_cache[game_id] = _build_replay_export_v2(game_id)
+
+    if game_id in _evolved_games:
+        return
+    _strategy_manager.evolve_from_game(game_id, state)
+    _evolve_model_experience(game_id, state)
+    _evolved_games.add(game_id)
+
+
+def _evolve_model_experience(game_id: str, state) -> None:
+    session = _manager.get_game(game_id)
+    bankrupt_count = sum(1 for item in state.players if not item.alive)
+    winner = max(state.players, key=lambda item: item.net_worth).player_id if state.players else "unknown"
+    materials = {
+        "game_id": game_id,
+        "winner": winner,
+        "total_turns": state.turn_index,
+        "bankrupt_count": bankrupt_count,
+        "last_events": [
+            {
+                "type": item.type,
+                "turn_index": item.turn_index,
+                "round_index": item.round_index,
+                "payload": item.payload,
+            }
+            for item in session.events[-50:]
+        ],
+    }
+    done_models: set[str] = set()
+    for player in session.players:
+        if not player.is_agent:
+            continue
+        runtime_cfg = _resolve_runtime_config(game_id, player.player_id)
+        model_id = runtime_cfg.model_name
+        if model_id in done_models:
+            continue
+        done_models.add(model_id)
+        summary = build_experience_summary(runtime_cfg, materials)
+        _experience_store.add_record(
+            model_id=model_id,
+            provider=runtime_cfg.model_provider,
+            game_id=game_id,
+            summary=summary,
+        )
 
 
 async def _broadcast_state_sync(game_id: str, event: dict[str, Any] | None = None, audit: dict[str, Any] | None = None) -> None:
@@ -156,82 +229,19 @@ async def _broadcast_state_sync(game_id: str, event: dict[str, Any] | None = Non
     await ws_manager.broadcast(game_id, payload)
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def _human_wait_reason(game_id: str) -> str:
+    state = _manager.state(game_id)
+    if state.status != "running":
+        return "game_finished"
+    if state.waiting_for_human:
+        if state.human_wait_reason == "roll_dice":
+            return "waiting_human_roll"
+        if state.human_wait_reason == "branch_decision":
+            return "waiting_human_branch_decision"
+    return "none"
 
 
-def _split_thought_chunks(text: str, max_chunk_len: int = 18) -> list[str]:
-    if not text:
-        return []
-    chunks: list[str] = []
-    current = ""
-    punctuations = {",", ".", ";", "!", "?", "，", "。", "；", "！", "？"}
-    for char in text:
-        current += char
-        if len(current) >= max_chunk_len or char in punctuations:
-            chunks.append(current)
-            current = ""
-    if current:
-        chunks.append(current)
-    return chunks
-
-
-def _normalized_thought(raw_thought: str | None) -> str:
-    text = (raw_thought or "").strip()
-    if _THOUGHT_STREAM_MAX_LEN and len(text) > _THOUGHT_STREAM_MAX_LEN:
-        text = text[: _THOUGHT_STREAM_MAX_LEN - 3] + "..."
-    if _THOUGHT_STREAM_MODE == "off":
-        return ""
-    if _THOUGHT_STREAM_MODE == "summary":
-        return (text[:117] + "...") if len(text) > 120 else text
-    return text
-
-
-async def _stream_agent_thought(
-    game_id: str,
-    player_id: str,
-    player_name: str,
-    turn_index: int,
-    thought: str,
-) -> None:
-    if not thought:
-        return
-    chunks = _split_thought_chunks(thought)
-    if not chunks:
-        return
-    total = len(chunks)
-    for idx, chunk in enumerate(chunks, start=1):
-        await ws_manager.broadcast(
-            game_id,
-            {
-                "type": "agent.thought.delta",
-                "game_id": game_id,
-                "player_id": player_id,
-                "player_name": player_name,
-                "turn_index": turn_index,
-                "seq": idx,
-                "delta": chunk,
-                "is_final": idx == total,
-                "ts": _now_iso(),
-            },
-        )
-        if _THOUGHT_STREAM_DELAY_MS:
-            await asyncio.sleep(_THOUGHT_STREAM_DELAY_MS / 1000)
-    await ws_manager.broadcast(
-        game_id,
-        {
-            "type": "agent.thought.done",
-            "game_id": game_id,
-            "player_id": player_id,
-            "player_name": player_name,
-            "turn_index": turn_index,
-            "full_text": thought,
-            "ts": _now_iso(),
-        },
-    )
-
-
-async def _run_agent_turn_once(game_id: str, player_id: str) -> tuple[bool, str, ActionResponse]:
+async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_human_actions: bool) -> tuple[bool, str, ActionResponse]:
     _manager.advance_to_decision_if_needed(game_id, player_id)
     state = _manager.state(game_id)
     if state.current_player_id != player_id:
@@ -242,25 +252,15 @@ async def _run_agent_turn_once(game_id: str, player_id: str) -> tuple[bool, str,
     runtime = _runtime_for_player(game_id, player_id)
     turn_input = _build_turn_input_v2(game_id, runtime)
     envelope = runtime.decide(turn_input)
-    thought_text = _normalized_thought(envelope.decision.thought)
-    session = _manager.get_game(game_id)
-    current = next(item for item in session.players if item.player_id == player_id)
-    player_name = current.name
-    await _stream_agent_thought(
-        game_id=game_id,
-        player_id=player_id,
-        player_name=player_name,
-        turn_index=turn_input.turn_meta.turn_index,
-        thought=thought_text,
-    )
     accepted, message, event = _manager.apply_action(
         game_id=game_id,
         player_id=player_id,
         action=envelope.decision.action,
         args=envelope.decision.args,
         decision_audit=envelope,
+        enforce_human_restrictions=not allow_hidden_human_actions,
     )
-    state = _manager.state(game_id)
+    _finalize_if_needed(game_id)
     await _broadcast_state_sync(
         game_id,
         event=event.model_dump(mode="json") if event else None,
@@ -269,10 +269,49 @@ async def _run_agent_turn_once(game_id: str, player_id: str) -> tuple[bool, str,
     return accepted, message, ActionResponse(
         accepted=accepted,
         message=message,
-        state=state,
+        state=_manager.state(game_id),
         event=event,
         audit=envelope.audit,
     )
+
+
+async def _auto_advance_until_human(game_id: str, max_steps: int = 120) -> AutoAdvanceResult:
+    steps = 0
+    audits: list[dict[str, Any]] = []
+    stopped_reason = "max_steps"
+
+    while steps < max_steps:
+        state = _manager.state(game_id)
+        if state.status != "running":
+            stopped_reason = "game_finished"
+            break
+
+        wait_reason = _human_wait_reason(game_id)
+        if wait_reason != "none":
+            stopped_reason = wait_reason
+            break
+
+        session = _manager.get_game(game_id)
+        current_player = session.players[session.current_player_index]
+
+        accepted, message, response = await _run_model_decision_once(
+            game_id=game_id,
+            player_id=current_player.player_id,
+            allow_hidden_human_actions=not current_player.is_agent,
+        )
+        steps += 1
+        if response.audit is not None:
+            audits.append(response.audit.model_dump(mode="json"))
+
+        if not accepted:
+            stopped_reason = f"blocked:{message}"
+            break
+
+    if steps >= max_steps and stopped_reason == "max_steps":
+        stopped_reason = "max_steps"
+
+    _finalize_if_needed(game_id)
+    return AutoAdvanceResult(steps=steps, stopped_reason=stopped_reason, audits=audits)
 
 
 @router.post("", response_model=dict)
@@ -288,10 +327,16 @@ async def create_game_v2(payload: CreateGameRequest) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    auto = await _auto_advance_until_human(session.game_id)
     state = _manager.state(session.game_id)
     await ws_manager.broadcast(session.game_id, {"type": "game.started", "state": state.model_dump(mode="json")})
     log_json("game.created", game_id=session.game_id, players=[item.player_id for item in payload.players])
-    return {"game_id": session.game_id, "state": state.model_dump(mode="json")}
+    return {
+        "game_id": session.game_id,
+        "state": state.model_dump(mode="json"),
+        "auto_advanced_steps": auto.steps,
+        "stopped_reason": auto.stopped_reason,
+    }
 
 
 @router.get("", response_model=dict)
@@ -315,19 +360,28 @@ async def submit_action_v2(game_id: str, payload: ActionRequest) -> ActionRespon
 
     action = payload.action.value if isinstance(payload.action, ActionType) else str(payload.action)
     accepted, message, event = _manager.apply_action(game_id=game_id, player_id=payload.player_id, action=action, args=payload.args)
-    state = _manager.state(game_id)
     await _broadcast_state_sync(game_id, event=event.model_dump(mode="json") if event else None)
     metrics.inc("game.action.count")
     if not accepted:
         metrics.inc("game.action.rejected.count")
-    return ActionResponse(accepted=accepted, message=message, state=state, event=event)
+        return ActionResponse(accepted=accepted, message=message, state=_manager.state(game_id), event=event)
+
+    auto = await _auto_advance_until_human(game_id)
+    wait_reason = _human_wait_reason(game_id)
+    next_message = auto.stopped_reason if auto.stopped_reason != "max_steps" else wait_reason
+    if next_message == "none":
+        next_message = "state_updated"
+    return ActionResponse(accepted=True, message=next_message, state=_manager.state(game_id), event=event)
 
 
 @router.post("/{game_id}/agent/{player_id}/act", response_model=ActionResponse)
 async def agent_act_v2(game_id: str, player_id: str) -> ActionResponse:
     if not _manager.has_game(game_id):
         raise HTTPException(status_code=404, detail="unknown game")
-    _, _, response = await _run_agent_turn_once(game_id, player_id)
+    _, _, response = await _run_model_decision_once(game_id, player_id, allow_hidden_human_actions=False)
+    auto = await _auto_advance_until_human(game_id)
+    response.message = auto.stopped_reason
+    response.state = _manager.state(game_id)
     return response
 
 
@@ -339,41 +393,14 @@ async def auto_play_agents_v2(
     if not _manager.has_game(game_id):
         raise HTTPException(status_code=404, detail="unknown game")
 
-    steps = 0
-    stopped_reason = "max_steps"
-    audits: list[dict[str, Any]] = []
-
-    while steps < max_steps:
-        state = _manager.state(game_id)
-        if state.status != "running":
-            stopped_reason = "game_finished"
-            break
-
-        session = _manager.get_game(game_id)
-        current_player = session.players[session.current_player_index]
-        if not current_player.is_agent:
-            stopped_reason = "human_turn"
-            break
-
-        accepted, message, response = await _run_agent_turn_once(game_id, current_player.player_id)
-        steps += 1
-        if response.audit is not None:
-            audits.append(response.audit.model_dump(mode="json"))
-
-        if not accepted:
-            stopped_reason = f"blocked:{message}"
-            break
-
-    if steps == max_steps and stopped_reason == "max_steps":
-        stopped_reason = "max_steps"
-
+    result = await _auto_advance_until_human(game_id, max_steps=max_steps)
     final_state = _manager.state(game_id).model_dump(mode="json")
     return {
         "game_id": game_id,
-        "steps": steps,
-        "stopped_reason": stopped_reason,
+        "steps": result.steps,
+        "stopped_reason": result.stopped_reason,
         "state": final_state,
-        "audits": audits[-8:],
+        "audits": result.audits[-8:],
     }
 
 
@@ -410,7 +437,21 @@ def export_replay_jsonl_v2(
 def replay_summary_v2(game_id: str) -> ReplayExport:
     if not _manager.has_game(game_id):
         raise HTTPException(status_code=404, detail="unknown game")
-    return _build_replay_export_v2(game_id)
+    _finalize_if_needed(game_id)
+    if game_id not in _summary_cache:
+        _summary_cache[game_id] = _build_replay_export_v2(game_id)
+    return _summary_cache[game_id]
+
+
+@router.get("/strategy/versions", response_model=StrategyVersionsResponse)
+def strategy_versions_v2() -> StrategyVersionsResponse:
+    records: list[StrategyVersionRecord] = _strategy_manager.snapshot()
+    return StrategyVersionsResponse(records=records)
+
+
+@router.get("/model-experiences", response_model=ModelExperienceResponse)
+def model_experiences_v2(model_id: str | None = Query(default=None), limit: int = Query(default=50, ge=1, le=500)) -> ModelExperienceResponse:
+    return ModelExperienceResponse(records=_experience_store.list_records(model_id=model_id, limit=limit))
 
 
 @router.websocket("/{game_id}/ws")

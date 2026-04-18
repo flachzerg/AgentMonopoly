@@ -87,6 +87,17 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class StrategyProfile(StrictModel):
+    player_id: str
+    version: str = "strategy-v1.0.0"
+    summary: str = "初始策略：稳健现金流与低风险扩张。"
+    risk_appetite: Literal["low", "medium", "high"] = "medium"
+    alliance_preference: Literal["low", "medium", "high"] = "medium"
+    liquidity_floor: int = 350
+    updated_at: datetime
+    source_game_id: str | None = None
+
+
 class ActionOption(StrictModel):
     action: str
     description: str
@@ -150,6 +161,8 @@ class TurnInput(StrictModel):
     template_key: str
     template_version: str
     memory_summary: str | None = None
+    model_experience_summary: str | None = None
+    strategy_profile: StrategyProfile | None = None
 
 
 class AgentTurnOutput(StrictModel):
@@ -236,6 +249,9 @@ class GameState(StrictModel):
     players: list[PlayerSnapshot]
     board: list[TileState]
     allowed_actions: list[ActionOption]
+    minimal_human_actions: list[ActionOption] = Field(default_factory=list)
+    waiting_for_human: bool = False
+    human_wait_reason: Literal["none", "roll_dice", "branch_decision"] = "none"
     last_events: list[EventRecord]
 
 
@@ -287,7 +303,33 @@ class ReplayExport(StrictModel):
     generated_at: datetime
     metrics: dict[str, float]
     strategy_timeline: list[dict[str, Any]]
+    recap: dict[str, Any]
+    prompt_materials: dict[str, Any]
     markdown: str
+
+
+class StrategyVersionRecord(StrictModel):
+    player_id: str
+    version: str
+    summary: str
+    updated_at: datetime
+    source_game_id: str | None = None
+
+
+class StrategyVersionsResponse(StrictModel):
+    records: list[StrategyVersionRecord]
+
+
+class ModelExperienceRecord(StrictModel):
+    model_id: str
+    provider: str
+    game_id: str
+    summary: str
+    created_at: datetime
+
+
+class ModelExperienceResponse(StrictModel):
+    records: list[ModelExperienceRecord]
 
 
 class EvaluationResult(StrictModel):

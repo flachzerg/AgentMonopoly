@@ -60,8 +60,6 @@
 | `owner_id` | 拥有者 |
 | `property_price`, `toll` | 地价和过路费 |
 | `event_key`, `quiz_key` | 事件题目 key |
-| `next_tile_ids` | 当前格子的后继格子（兼容单环/分支） |
-| `branch_options` | 当后继数 > 1 时给出的分支候选 |
 
 #### `options`（`ActionOption`）
 
@@ -101,28 +99,14 @@
     "deposit": 0,
     "net_worth": 1420,
     "position": 5,
-    "current_tile_id": "tile_05",
-    "route_preference_tile_id": null,
     "property_ids": [],
     "alliance_with": null,
     "alive": true
   },
   "players_snapshot": [],
-  "board_snapshot": {
-    "track_length": 16,
-    "topology": "graph",
-    "start_tile_id": "tile_00",
-    "tiles": []
-  },
+  "board_snapshot": { "track_length": 16, "tiles": [] },
   "history_records": [],
   "options": [
-    {
-      "action": "set_route_preference",
-      "description": "设置前方分支偏好",
-      "required_args": ["target_tile_id"],
-      "allowed_values": { "target_tile_id": ["tile_08_a", "tile_08_b"] },
-      "default_args": { "target_tile_id": "tile_08_a" }
-    },
     { "action": "buy_property", "description": "购买地产", "required_args": [], "allowed_values": {}, "default_args": {} },
     { "action": "skip_buy", "description": "跳过购买", "required_args": [], "allowed_values": {}, "default_args": {} },
     { "action": "pass", "description": "结束决策", "required_args": [], "allowed_values": {}, "default_args": {} }
@@ -179,13 +163,6 @@
 5. `allowed_values` 必须满足约束。
 
 任何失败将记入 `failure_codes`，并触发 fallback 决策。
-
-## 4.1 分支偏好约定（新增）
-
-- 后端会在“前方 6 格可达范围”内探测分支节点。
-- 若存在分支，`options` 会追加 `set_route_preference`。
-- Agent 在该动作中返回 `target_tile_id`，用于后续掷骰时的分叉优先路径。
-- 不新增 `BRANCH` 地块类型，分支由 `next_tile_ids` 拓扑定义，保持与单环地块类型体系兼容。
 
 ## 5. 审计与前端消费
 

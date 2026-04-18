@@ -28,20 +28,8 @@ class ReplaySummaryApiTests(unittest.TestCase):
         create_response = self.client.post("/games", json=create_payload)
         self.assertEqual(create_response.status_code, 200)
 
-        roll_response = self.client.post(
-            f"/games/{game_id}/actions",
-            json={
-                "game_id": game_id,
-                "player_id": "p1",
-                "action": "roll_dice",
-                "args": {},
-            },
-        )
-        self.assertEqual(roll_response.status_code, 200)
-        self.assertTrue(roll_response.json()["accepted"])
-
-        act_response = self.client.post(f"/games/{game_id}/agent/p1/act")
-        self.assertEqual(act_response.status_code, 200)
+        auto_response = self.client.post(f"/games/{game_id}/auto-play?max_steps=200")
+        self.assertEqual(auto_response.status_code, 200)
 
         replay_response = self.client.get(f"/games/{game_id}/replay")
         self.assertEqual(replay_response.status_code, 200)
@@ -56,8 +44,11 @@ class ReplaySummaryApiTests(unittest.TestCase):
         summary = summary_response.json()
         self.assertIn("metrics", summary)
         self.assertIn("strategy_timeline", summary)
+        self.assertIn("recap", summary)
+        self.assertIn("prompt_materials", summary)
         self.assertIn("markdown", summary)
         self.assertIn("fallback_ratio", summary["metrics"])
+        self.assertIn("overview", summary["recap"])
 
 
 if __name__ == "__main__":

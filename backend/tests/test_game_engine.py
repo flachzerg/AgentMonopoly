@@ -35,7 +35,7 @@ class GameEngineTestCase(unittest.TestCase):
 
         after = manager.state("g-phase")
         self.assertEqual(after.current_phase, "DECISION")
-        self.assertGreater(len(after.allowed_actions), 0)
+        self.assertEqual(len(after.allowed_actions), 0)
 
     def test_buy_property_and_turn_rotate(self) -> None:
         manager = self._new_manager()
@@ -44,9 +44,18 @@ class GameEngineTestCase(unittest.TestCase):
         manager.apply_action("g-buy", "p1", "roll_dice", {})
         state = manager.state("g-buy")
         self.assertEqual(state.current_phase, "DECISION")
-        self.assertIn("buy_property", [item.action for item in state.allowed_actions])
+        self.assertEqual(state.allowed_actions, [])
+        accepted, msg, _ = manager.apply_action("g-buy", "p1", "buy_property", {"tile_id": "T01"})
+        self.assertFalse(accepted)
+        self.assertEqual(msg, "action not allowed")
 
-        accepted, _, _ = manager.apply_action("g-buy", "p1", "buy_property", {"tile_id": "T01"})
+        accepted, _, _ = manager.apply_action(
+            "g-buy",
+            "p1",
+            "buy_property",
+            {"tile_id": "T01"},
+            enforce_human_restrictions=False,
+        )
         self.assertTrue(accepted)
 
         next_state = manager.state("g-buy")
@@ -61,10 +70,16 @@ class GameEngineTestCase(unittest.TestCase):
 
         manager.apply_action("g-bank", "p1", "roll_dice", {})
         state = manager.state("g-bank")
-        self.assertIn("bank_withdraw", [item.action for item in state.allowed_actions])
+        self.assertEqual(state.allowed_actions, [])
 
         before = next(item for item in state.players if item.player_id == "p1")
-        accepted, _, _ = manager.apply_action("g-bank", "p1", "bank_withdraw", {"amount": 100})
+        accepted, _, _ = manager.apply_action(
+            "g-bank",
+            "p1",
+            "bank_withdraw",
+            {"amount": 100},
+            enforce_human_restrictions=False,
+        )
         self.assertTrue(accepted)
 
         after_state = manager.state("g-bank")
@@ -77,7 +92,13 @@ class GameEngineTestCase(unittest.TestCase):
         self._create_game(manager, "g-ally", seed=2)
 
         manager.apply_action("g-ally", "p1", "roll_dice", {})
-        accepted, _, _ = manager.apply_action("g-ally", "p1", "propose_alliance", {"target_player_id": "p2"})
+        accepted, _, _ = manager.apply_action(
+            "g-ally",
+            "p1",
+            "propose_alliance",
+            {"target_player_id": "p2"},
+            enforce_human_restrictions=False,
+        )
         self.assertTrue(accepted)
 
         manager.apply_action("g-ally", "p2", "roll_dice", {})

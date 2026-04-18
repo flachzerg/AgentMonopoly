@@ -27,7 +27,7 @@ export default function ReplayPage() {
 
   useEffect(() => {
     if (!routeGameId) {
-      navigate("/");
+      navigate("/setup");
       return;
     }
     if (gameId !== routeGameId) {
@@ -43,7 +43,7 @@ export default function ReplayPage() {
       <section className="panel replay-header">
         <h1>全局复盘</h1>
         <div className="replay-header-actions">
-          <button type="button" className="btn-secondary" onClick={() => navigate("/")}>新建对局</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate("/setup")}>新建对局</button>
           <button type="button" className="btn-secondary" onClick={() => navigate(`/game/${encodeURIComponent(routeGameId)}`)}>
             返回对局
           </button>

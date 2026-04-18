@@ -68,6 +68,7 @@ export type DecisionAudit = {
 export type GameState = {
   game_id: string;
   status: "waiting" | "running" | "finished";
+  map_asset?: string | null;
   round_index: number;
   turn_index: number;
   max_rounds: number;
@@ -77,6 +78,9 @@ export type GameState = {
   players: PlayerSnapshot[];
   board: TileState[];
   allowed_actions: ActionOption[];
+  minimal_human_actions: ActionOption[];
+  waiting_for_human: boolean;
+  human_wait_reason: "none" | "roll_dice" | "branch_decision";
   last_events: EventRecord[];
 };
 
@@ -112,6 +116,8 @@ export type ReplaySummary = {
   generated_at: string;
   metrics: Record<string, number>;
   strategy_timeline: Array<Record<string, unknown>>;
+  recap: Record<string, unknown>;
+  prompt_materials: Record<string, unknown>;
   markdown: string;
 };
 
@@ -143,6 +149,7 @@ export type WsStateSyncPayload = {
 export type CreateGameRequest = {
   game_id: string;
   room_name?: string;
+  map_theme?: string;
   players: Array<{
     player_id: string;
     name: string;
@@ -170,4 +177,9 @@ export type AgentOptions = {
   base_url: string;
   models_checked_at: string;
   model_options: string[];
+};
+
+export type MapOptions = {
+  map_assets: string[];
+  default_map_asset: string;
 };

@@ -5,11 +5,21 @@ import type {
   CreateGameResponse,
   CreateGameRequest,
   GameState,
+  MapOptions,
   ReplayResponse,
   ReplaySummary,
 } from "../types/game";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+function defaultApiBase(): string {
+  if (typeof window === "undefined") {
+    return "http://localhost:8000";
+  }
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  const host = window.location.hostname || "localhost";
+  return `${protocol}//${host}:8000`;
+}
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? defaultApiBase()).replace(/\/$/, "");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -78,9 +88,16 @@ export const gamesApi = {
 
   getAgentOptions: async (): Promise<AgentOptions> =>
     request<AgentOptions>("/games/agent-options"),
+
+  getMapOptions: async (): Promise<MapOptions> =>
+    request<MapOptions>("/games/map-options"),
 };
 
 export function wsUrlForGame(gameId: string): string {
-  const raw = (import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000").replace(/\/$/, "");
+  const defaultWsBase =
+    typeof window === "undefined"
+      ? "ws://localhost:8000"
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.hostname || "localhost"}:8000`;
+  const raw = (import.meta.env.VITE_WS_BASE_URL ?? defaultWsBase).replace(/\/$/, "");
   return `${raw}/games/${gameId}/ws`;
 }

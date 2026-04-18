@@ -23,6 +23,7 @@ from app.schemas import (
     TileContext,
     TurnInput,
     TurnMeta,
+    StrategyProfile,
 )
 
 
@@ -120,6 +121,10 @@ class HeuristicDecisionModel:
         options = payload.get("options", [])
         player = payload.get("player_state", {})
         tile_context = payload.get("tile_context", {})
+        strategy_profile = payload.get("strategy_profile") or {}
+        risk_appetite = str(strategy_profile.get("risk_appetite", "medium"))
+        liquidity_floor_profile = int(strategy_profile.get("liquidity_floor", 350))
+        alliance_preference = str(strategy_profile.get("alliance_preference", "medium"))
 
         selected_action = "pass"
         args: dict[str, Any] = {}
@@ -134,7 +139,11 @@ class HeuristicDecisionModel:
             args = route_pref.get("default_args", {})
         elif tile_context.get("tile_subtype") == "PROPERTY_UNOWNED":
             buy = next((item for item in options if item["action"] == "buy_property"), None)
-            liquidity_floor = 250 if aggressive else 400
+            liquidity_floor = 250 if aggressive else liquidity_floor_profile
+            if risk_appetite == "low":
+                liquidity_floor = max(liquidity_floor, 500)
+            elif risk_appetite == "high":
+                liquidity_floor = max(200, liquidity_floor - 120)
             if buy and player.get("cash", 0) >= int(tile_context.get("property_price") or 0) + liquidity_floor:
                 selected_action = "buy_property"
                 args = buy.get("default_args", {})
@@ -153,7 +162,12 @@ class HeuristicDecisionModel:
                 args = withdraw.get("default_args", {})
         else:
             alliance = next((item for item in options if item["action"] == "propose_alliance"), None)
-            if alliance and player.get("alliance_with") is None and player.get("cash", 0) < 500:
+            cash_threshold = 500
+            if alliance_preference == "high":
+                cash_threshold = 700
+            elif alliance_preference == "low":
+                cash_threshold = 300
+            if alliance and player.get("alliance_with") is None and player.get("cash", 0) < cash_threshold:
                 selected_action = "propose_alliance"
                 args = alliance.get("default_args", {})
 
@@ -178,6 +192,8 @@ class TurnBuildInput:
     board_snapshot: BoardSnapshot
     options: list[ActionOption]
     history_records: list[dict[str, Any]] = field(default_factory=list)
+    model_experience_summary: str | None = None
+    strategy_profile: StrategyProfile | None = None
 
 
 class AgentRuntime:
@@ -214,6 +230,8 @@ class AgentRuntime:
             template_key=template.key,
             template_version=template.version,
             memory_summary=memory_summary,
+            model_experience_summary=payload.model_experience_summary,
+            strategy_profile=payload.strategy_profile,
         )
 
     def decide(self, turn_input: TurnInput) -> AgentDecisionEnvelope:
