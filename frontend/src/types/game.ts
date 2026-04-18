@@ -126,6 +126,15 @@ export type WsStateSyncPayload = {
   event?: EventRecord | null;
   audit?: DecisionAudit;
   message?: string;
+  game_id?: string;
+  player_id?: string;
+  player_name?: string;
+  turn_index?: number;
+  seq?: number;
+  delta?: string;
+  is_final?: boolean;
+  full_text?: string;
+  ts?: string;
 };
 
 export type CreateGameRequest = {
