@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FC } from "react";
 
-import type { GameState, TileState } from "../types/game";
+import { getGamePlayerProfiles } from "../lib/modelAvatar";
+import type { GameState, PlayerSnapshot, TileState } from "../types/game";
+import { ModelAvatar } from "./ModelAvatar";
+import { PlayerDetailModal } from "./PlayerDetailModal";
 
 type Props = {
   state: GameState;
@@ -68,42 +71,50 @@ function parseViewBox(value: string | null): BoardViewBox {
   };
 }
 
-function getTokenOffset(index: number, total: number): { x: number; y: number } {
-  const presets: Record<number, readonly { x: number; y: number }[]> = {
+function getTokenPlacement(index: number, total: number, tileWidth: number, tileHeight: number): { x: number; y: number; size: number } {
+  const safeTotal = Math.max(1, Math.min(total, 6));
+  const shortSide = Math.max(42, Math.min(tileWidth, tileHeight));
+  const size = safeTotal <= 3 ? 30 : safeTotal <= 4 ? 27 : 24;
+  const radiusX = Math.min(tileWidth * 0.23, shortSide * 0.34);
+  const radiusY = Math.min(tileHeight * 0.23, shortSide * 0.28);
+
+  const layouts: Record<number, Array<{ x: number; y: number }>> = {
     1: [{ x: 0, y: 0 }],
     2: [
-      { x: -13, y: -10 },
-      { x: 13, y: 10 },
+      { x: -radiusX * 0.55, y: 0 },
+      { x: radiusX * 0.55, y: 0 },
     ],
     3: [
-      { x: 0, y: -14 },
-      { x: -14, y: 11 },
-      { x: 14, y: 11 },
+      { x: 0, y: -radiusY * 0.62 },
+      { x: -radiusX * 0.62, y: radiusY * 0.46 },
+      { x: radiusX * 0.62, y: radiusY * 0.46 },
     ],
     4: [
-      { x: -13, y: -11 },
-      { x: 13, y: -11 },
-      { x: -13, y: 11 },
-      { x: 13, y: 11 },
+      { x: -radiusX * 0.58, y: -radiusY * 0.5 },
+      { x: radiusX * 0.58, y: -radiusY * 0.5 },
+      { x: -radiusX * 0.58, y: radiusY * 0.5 },
+      { x: radiusX * 0.58, y: radiusY * 0.5 },
     ],
     5: [
       { x: 0, y: 0 },
-      { x: -14, y: -14 },
-      { x: 14, y: -14 },
-      { x: -14, y: 14 },
-      { x: 14, y: 14 },
+      { x: -radiusX * 0.74, y: -radiusY * 0.54 },
+      { x: radiusX * 0.74, y: -radiusY * 0.54 },
+      { x: -radiusX * 0.74, y: radiusY * 0.54 },
+      { x: radiusX * 0.74, y: radiusY * 0.54 },
+    ],
+    6: [
+      { x: -radiusX * 0.74, y: -radiusY * 0.58 },
+      { x: 0, y: -radiusY * 0.58 },
+      { x: radiusX * 0.74, y: -radiusY * 0.58 },
+      { x: -radiusX * 0.74, y: radiusY * 0.58 },
+      { x: 0, y: radiusY * 0.58 },
+      { x: radiusX * 0.74, y: radiusY * 0.58 },
     ],
   };
-  const fallback = [
-    { x: -16, y: -16 },
-    { x: 0, y: -16 },
-    { x: 16, y: -16 },
-    { x: -16, y: 16 },
-    { x: 0, y: 16 },
-    { x: 16, y: 16 },
-  ] as const;
-  const layout = presets[Math.min(total, 5)] ?? fallback;
-  return layout[index] ?? fallback[index % fallback.length] ?? { x: 0, y: 0 };
+
+  const layout = layouts[safeTotal] ?? layouts[6];
+  const point = layout[index % layout.length] ?? { x: 0, y: 0 };
+  return { ...point, size };
 }
 
 function tileExplain(tile: TileState, ownerName: string | null): string {
@@ -209,16 +220,22 @@ function projectSvgPoint(
   widthPx: number,
   heightPx: number,
 ): { centerX: number; centerY: number; width: number; height: number; slots: Slot[] } {
-  const scaleX = widthPx / viewBox.width;
-  const scaleY = heightPx / viewBox.height;
+  const viewBoxRatio = viewBox.width / viewBox.height;
+  const viewportRatio = widthPx / Math.max(heightPx, 1);
+  const scale = viewportRatio > viewBoxRatio ? heightPx / viewBox.height : widthPx / viewBox.width;
+  const renderedWidth = viewBox.width * scale;
+  const renderedHeight = viewBox.height * scale;
+  const offsetX = (widthPx - renderedWidth) / 2;
+  const offsetY = (heightPx - renderedHeight) / 2;
+
   return {
-    centerX: (layout.centerX - viewBox.x) * scaleX,
-    centerY: (layout.centerY - viewBox.y) * scaleY,
-    width: layout.width * scaleX,
-    height: layout.height * scaleY,
+    centerX: offsetX + (layout.centerX - viewBox.x) * scale,
+    centerY: offsetY + (layout.centerY - viewBox.y) * scale,
+    width: layout.width * scale,
+    height: layout.height * scale,
     slots: layout.slots.map((slot) => ({
-      x: (slot.x - viewBox.x) * scaleX,
-      y: (slot.y - viewBox.y) * scaleY,
+      x: offsetX + (slot.x - viewBox.x) * scale,
+      y: offsetY + (slot.y - viewBox.y) * scale,
     })),
   };
 }
@@ -237,6 +254,7 @@ export const BoardGrid: FC<Props> = ({ state }) => {
   const [rawSvg, setRawSvg] = useState<string>("");
   const [svgError, setSvgError] = useState<string>("");
   const [hoveredTileId, setHoveredTileId] = useState<string | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerSnapshot | null>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -333,6 +351,12 @@ export const BoardGrid: FC<Props> = ({ state }) => {
     for (const old of doc.querySelectorAll(".runtime-token")) {
       old.remove();
     }
+    for (const slot of doc.querySelectorAll("svg > circle")) {
+      slot.remove();
+    }
+    for (const frame of doc.querySelectorAll('svg > rect[fill="none"]')) {
+      frame.remove();
+    }
 
     const viewBox = parseViewBox(svg.getAttribute("viewBox"));
     const layouts: TileLayout[] = [];
@@ -346,6 +370,10 @@ export const BoardGrid: FC<Props> = ({ state }) => {
       if (!rect) {
         continue;
       }
+
+      rect.setAttribute("rx", "0");
+      rect.setAttribute("ry", "0");
+      rect.removeAttribute("filter");
 
       const x = readNumber(rect.getAttribute("x")) ?? 0;
       const y = readNumber(rect.getAttribute("y")) ?? 0;
@@ -412,12 +440,12 @@ export const BoardGrid: FC<Props> = ({ state }) => {
     style.textContent = `
       .map-runtime-tile rect { transition: transform .16s ease, filter .16s ease, stroke-width .16s ease; transform-origin: center; }
       .map-runtime-tile text:nth-of-type(3) { opacity: 0.38; transition: opacity .14s ease; }
-      .map-runtime-tile:hover rect { transform: translateY(-1px); filter: drop-shadow(0 8px 8px rgba(46, 27, 0, 0.22)); }
+      .map-runtime-tile:hover rect { transform: translateY(-1px); }
       .map-runtime-tile:hover text:nth-of-type(3) { opacity: 1; }
-      .map-runtime-active rect { stroke: #c66d14 !important; stroke-width: 3 !important; }
-      .map-runtime-owned rect { filter: drop-shadow(0 0 8px rgba(42,108,176,0.35)); }
-      .map-runtime-event rect { fill: #ffe4f3 !important; }
-      .map-runtime-path rect { stroke: #2f6fd6 !important; stroke-width: 3 !important; }
+      .map-runtime-active rect { stroke: #1f5f99 !important; stroke-width: 3 !important; }
+      .map-runtime-owned rect { stroke: #159a95 !important; }
+      .map-runtime-event rect { fill: #f3e8ef !important; }
+      .map-runtime-path rect { stroke: #1f5f99 !important; stroke-width: 3 !important; }
       .map-runtime-decision rect { stroke-dasharray: 6 3; }
     `;
     svg.appendChild(style);
@@ -433,6 +461,7 @@ export const BoardGrid: FC<Props> = ({ state }) => {
     return new Map(parsedMap.layouts.map((layout) => [layout.tileId, layout]));
   }, [parsedMap.layouts]);
 
+  const storedProfiles = useMemo(() => getGamePlayerProfiles(state.game_id), [state.game_id]);
   const hoverTile = hoveredTileId ? boardByTileId.get(hoveredTileId) ?? null : null;
   const hoverLayout = hoveredTileId ? layoutMap.get(hoveredTileId) ?? null : null;
 
@@ -471,7 +500,7 @@ export const BoardGrid: FC<Props> = ({ state }) => {
         <div ref={stageRef} className="board-stage svg-map-stage board-stage-runtime">
           <div className="board-svg-layer" dangerouslySetInnerHTML={{ __html: parsedMap.renderedSvg || rawSvg }} />
 
-          <div className="board-token-layer" aria-hidden="true">
+          <div className="board-token-layer">
             {parsedMap.layouts.flatMap((layout) => {
               const players = playersByTile.get(layout.tileIndex) ?? [];
               if (players.length === 0 || stageSize.width <= 0 || stageSize.height <= 0) {
@@ -481,21 +510,23 @@ export const BoardGrid: FC<Props> = ({ state }) => {
               return players.map((player, index) => {
                 const accent = TOKEN_PALETTE[index % TOKEN_PALETTE.length] ?? TOKEN_PALETTE[0];
                 const total = players.length;
-                const offset = getTokenOffset(index, total);
-                const slot = projected.slots[index] ?? projected.slots[projected.slots.length - 1];
-                const left = slot ? slot.x : projected.centerX + offset.x;
-                const top = slot ? slot.y : projected.centerY + offset.y;
+                const placement = getTokenPlacement(index, total, projected.width, projected.height);
                 const style = {
-                  left: `${left}px`,
-                  top: `${top}px`,
-                  transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+                  left: `${projected.centerX + placement.x}px`,
+                  top: `${projected.centerY + placement.y}px`,
+                  width: `${placement.size}px`,
+                  height: `${placement.size}px`,
+                  transform: "translate(-50%, -50%)",
                   ["--piece-color" as string]: accent.solid,
                   ["--piece-glow" as string]: accent.glow,
                 } as CSSProperties;
                 const isFocus = player.player_id === state.current_player_id;
+                const modelId = storedProfiles[player.player_id]?.model ?? null;
+                const vendorName = modelId?.split("/")[0] ?? null;
                 return (
-                  <span
+                  <button
                     key={`${layout.tileId}-${player.player_id}`}
+                    type="button"
                     className={[
                       "board-token",
                       isFocus ? "board-token--focus" : "",
@@ -504,9 +535,17 @@ export const BoardGrid: FC<Props> = ({ state }) => {
                       .join(" ")
                       .trim()}
                     style={style}
+                    aria-label={`查看 ${player.name || player.player_id} 状态`}
+                    onClick={() => setSelectedPlayer(player)}
                   >
-                    <span>{player.name?.slice(0, 1) || player.player_id.slice(0, 1)}</span>
-                  </span>
+                    <ModelAvatar
+                      officialModelId={modelId}
+                      displayName={player.name || player.player_id}
+                      vendorName={vendorName}
+                      size={Math.max(20, placement.size - 3)}
+                      variant="bare"
+                    />
+                  </button>
                 );
               });
             })}
@@ -563,15 +602,14 @@ export const BoardGrid: FC<Props> = ({ state }) => {
           ) : null}
         </div>
       )}
-      <div className="board-legend">
-        <span className="legend-item legend-active">当前落点</span>
-        <span className="legend-item legend-path">行动路径</span>
-        <span className="legend-item legend-event">事件格</span>
-        <span className="legend-item legend-owned">已有归属</span>
-        <span className="legend-item legend-token-focus">当前玩家</span>
-        <span className="legend-item legend-token-bankrupt">破产玩家</span>
-        {state.human_wait_reason === "branch_decision" ? <span className="legend-item legend-decision">真人决策点</span> : null}
-      </div>
+      <PlayerDetailModal
+        state={state}
+        player={selectedPlayer}
+        open={Boolean(selectedPlayer)}
+        onClose={() => setSelectedPlayer(null)}
+        modelId={selectedPlayer ? storedProfiles[selectedPlayer.player_id]?.model ?? null : null}
+        vendorName={selectedPlayer ? storedProfiles[selectedPlayer.player_id]?.model?.split("/")[0] ?? null : null}
+      />
     </section>
   );
 };

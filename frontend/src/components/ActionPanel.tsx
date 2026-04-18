@@ -13,7 +13,7 @@ type Props = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  roll_dice: "掷骰子",
+  roll_dice: "掷骰",
   event_choice: "事件选择",
   accept_alliance: "同意联盟",
   reject_alliance: "拒绝联盟",
@@ -141,7 +141,7 @@ export const ActionPanel: FC<Props> = ({
     }
     if (state.status === "running" && state.waiting_for_human) {
       return {
-        label: `执行：${currentActionLabel}`,
+        label: currentActionLabel,
         disabled: busy || !selectedAction,
         onClick: () => onSubmitAction(selectedAction, args),
       };
@@ -193,7 +193,7 @@ export const ActionPanel: FC<Props> = ({
     <section className="panel action-panel">
       <div className="taskbar-main">
         <div className="taskbar-status">
-          <h2>任务栏</h2>
+          <h2>当前行动</h2>
           <div className="action-meta">
             <span>当前玩家：{state.current_player_id}</span>
             <span>阶段：{state.current_phase}</span>
@@ -266,7 +266,6 @@ export const ActionPanel: FC<Props> = ({
           {primaryAction.label}
         </button>
       </div>
-      <p className="muted">所有动作均由后端白名单与参数校验判定。</p>
     </section>
   );
 };

@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useEffect, useRef, type FC } from "react";
 
 import type { EventRecord } from "../types/game";
 import {
@@ -23,12 +23,22 @@ export const EventTimeline: FC<Props> = ({
   emptyText = "暂无事件。",
   compact = false,
 }) => {
-  const latest = [...events].slice(-40).reverse();
+  const latest = [...events].slice(-40);
+  const timelineRef = useRef<HTMLDivElement | null>(null);
   const rootClassName = compact ? "event-timeline" : "panel event-timeline";
+
+  useEffect(() => {
+    const element = timelineRef.current;
+    if (!element) {
+      return;
+    }
+    element.scrollTop = element.scrollHeight;
+  }, [latest.length]);
+
   return (
     <section className={rootClassName}>
       <h2>{title}</h2>
-      <div className="timeline">
+      <div ref={timelineRef} className="timeline">
         {latest.length === 0 ? (
           <p className="muted">{emptyText}</p>
         ) : (

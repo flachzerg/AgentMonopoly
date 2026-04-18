@@ -1,12 +1,12 @@
 import type { FC } from "react";
 
 const PHASE_LABELS: Record<string, string> = {
-  ROLL: "ROLL",
-  TILE_ENTER: "TILE_ENTER",
-  AUTO_SETTLE: "AUTO_SETTLE",
-  DECISION: "DECISION",
-  EXECUTE: "EXECUTE",
-  LOG: "LOG",
+  ROLL: "等待掷骰",
+  TILE_ENTER: "到达格子",
+  AUTO_SETTLE: "自动结算",
+  DECISION: "策略判断",
+  EXECUTE: "执行动作",
+  LOG: "记录中",
 };
 
 export const PhaseBadge: FC<{ phase: string }> = ({ phase }) => {

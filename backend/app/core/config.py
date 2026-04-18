@@ -14,7 +14,7 @@ class Settings(BaseModel):
         "ALLOWED_ORIGINS",
         "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
     ).split(",")
-    allowed_origin_regex: str = os.getenv(
+    allowed_origin_regex: str | None = os.getenv(
         "ALLOWED_ORIGIN_REGEX",
         r"^https?://(localhost|127\.0\.0\.1):\d+$",
     )

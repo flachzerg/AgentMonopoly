@@ -284,7 +284,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const client = new GameWsClient(gameId, {
       onStatus: (status, retryCount) => {
-        set({ wsStatus: status, wsRetryCount: retryCount });
+        set({ wsStatus: status, wsRetryCount: retryCount, error: status === "online" ? null : get().error });
       },
       onError: (message) => {
         set({ error: message });
