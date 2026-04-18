@@ -1,1 +1,7 @@
 .venv-Hackathon
+*.pdf
+backend/.venv/
+frontend/node_modules/
+*.pyc
+__pycache__/
+frontend/dist/

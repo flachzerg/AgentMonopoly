@@ -1,0 +1,50 @@
+﻿:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e8ecf1;
+}
+
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.panel-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.panel {
+  background: #171a23;
+  border: 1px solid #2a3040;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+button {
+  margin-top: 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+ul {
+  margin: 0;
+  padding-left: 18px;
+}
