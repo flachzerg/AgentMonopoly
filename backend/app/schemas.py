@@ -93,6 +93,7 @@ class TurnInput(StrictModel):
     player_state: PlayerSnapshot
     players_snapshot: list[PlayerSnapshot]
     board_snapshot: BoardSnapshot
+    history_records: list[dict[str, Any]] = Field(default_factory=list)
     options: list[ActionOption]
     output_contract: OutputContract
     template_key: str

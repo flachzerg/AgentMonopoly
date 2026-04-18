@@ -27,221 +27,92 @@ class TemplateVersion:
             for item in turn_input.options
         }
         sections = [
-            f"# 模板: {self.key}",
-            f"版本: {self.version}",
-            f"用途: {self.objective}",
-            f"硬约束: {self.risk_notice}",
+            "# Agent 决策输入",
             "",
-            "## 场景现状",
-            self.body,
+            "## 固定上下文",
+            json.dumps(
+                {
+                    "protocol": turn_input.protocol,
+                    "turn_meta": turn_input.turn_meta.model_dump(mode="json"),
+                    "tile_context": turn_input.tile_context.model_dump(mode="json"),
+                    "player_state": turn_input.player_state.model_dump(mode="json"),
+                    "players_snapshot": [item.model_dump(mode="json") for item in turn_input.players_snapshot],
+                    "board_snapshot": turn_input.board_snapshot.model_dump(mode="json"),
+                    "history_records": turn_input.history_records,
+                    "memory_summary": turn_input.memory_summary,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
             "",
-            "## 动作参数范围",
+            "## 当前格子可执行动作与参数",
             json.dumps(options_summary, ensure_ascii=False, sort_keys=True),
             "",
-            "## 输出合同",
+            "## 输出标准化参数",
             json.dumps(turn_input.output_contract.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
             "",
-            "## 回合输入 JSON",
+            "## Turn Input JSON",
             json.dumps(turn_input.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
             "",
         ]
         return "\n".join(sections)
 
 
+COMMON_OBJECTIVE = "模板仅描述事实输入，不提供策略引导。"
+COMMON_RISK_NOTICE = "动作必须来自 options，参数必须匹配 allowed_values，输出仅允许合同字段。"
+COMMON_BODY = "全局状态、当前玩家状态、历史执行记录的结构在所有格子模板中保持一致。"
+
+
+def _two_versions(key: str, updated_on: str) -> list[TemplateVersion]:
+    return [
+        TemplateVersion(
+            key=key,
+            version="1.0.0",
+            objective=COMMON_OBJECTIVE,
+            risk_notice=COMMON_RISK_NOTICE,
+            body=COMMON_BODY,
+            change_note="状态输入模板初版。",
+            updated_on=updated_on,
+        ),
+        TemplateVersion(
+            key=key,
+            version="1.1.0",
+            objective=COMMON_OBJECTIVE,
+            risk_notice=COMMON_RISK_NOTICE,
+            body=COMMON_BODY,
+            change_note="统一为状态模板，格子差异仅体现在动作与参数。",
+            updated_on=updated_on,
+        ),
+    ]
+
+
 TEMPLATE_CATALOG: dict[str, list[TemplateVersion]] = {
-    "PROPERTY_UNOWNED_TEMPLATE": [
-        TemplateVersion(
-            key="PROPERTY_UNOWNED_TEMPLATE",
-            version="1.0.0",
-            objective="描述无人地产格事实信息。",
-            risk_notice="动作仅可来自 options，参数必须命中 allowed_values。",
-            body=(
-                "当前格子类型为 PROPERTY_UNOWNED。输入 JSON 内含地块价格、过路费、玩家现金、玩家总资产、"
-                "棋盘快照与其余玩家信息。可选动作通常含 buy_property、skip_buy、pass。"
-            ),
-            change_note="无人地产模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="PROPERTY_UNOWNED_TEMPLATE",
-            version="1.1.0",
-            objective="描述无人地产格事实信息（字段排序优化版）。",
-            risk_notice="必须返回合同字段，且不得输出额外字段。",
-            body=(
-                "该回合处于 DECISION 阶段，落点为无人地产。输入 JSON 提供地块 id、地块价值、玩家资金、"
-                "联盟状态与候选动作列表。模型仅需在候选动作里给出一个动作。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "PROPERTY_SELF_TEMPLATE": [
-        TemplateVersion(
-            key="PROPERTY_SELF_TEMPLATE",
-            version="1.0.0",
-            objective="描述己方地产格事实信息。",
-            risk_notice="仅可使用当前轮可选动作与允许参数。",
-            body=(
-                "当前落点为己方地产。输入 JSON 包含本方地产列表、当前资金、全局玩家快照、"
-                "以及本轮动作候选项。"
-            ),
-            change_note="己方地产模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="PROPERTY_SELF_TEMPLATE",
-            version="1.1.0",
-            objective="描述己方地产格事实信息（结构优化版）。",
-            risk_notice="输出必须符合 DY-MONO-TURN-OUT/3.1。",
-            body=(
-                "当前格子由当前玩家持有。输入 JSON 内含玩家状态、棋盘状态、联盟状态与动作候选。"
-                "模型只需输出一个合法动作与参数。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "PROPERTY_ALLY_TEMPLATE": [
-        TemplateVersion(
-            key="PROPERTY_ALLY_TEMPLATE",
-            version="1.0.0",
-            objective="描述盟友地产格事实信息。",
-            risk_notice="动作与参数必须满足 options 约束。",
-            body=(
-                "当前落点为盟友地产。输入 JSON 给出联盟关系、玩家资产与动作候选项。"
-                "该场景不会出现合同外动作。"
-            ),
-            change_note="盟友地产模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="PROPERTY_ALLY_TEMPLATE",
-            version="1.1.0",
-            objective="描述盟友地产格事实信息（字段精简版）。",
-            risk_notice="必须返回 action 与 args，且字段名不可变。",
-            body=(
-                "当前为盟友地产场景。输入 JSON 含玩家关系、经济状态、动作候选列表。"
-                "模型输出仅用于系统执行层。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "PROPERTY_OTHER_TEMPLATE": [
-        TemplateVersion(
-            key="PROPERTY_OTHER_TEMPLATE",
-            version="1.0.0",
-            objective="描述他方地产格事实信息。",
-            risk_notice="禁止输出 options 外动作或非法参数。",
-            body=(
-                "当前落点为他方地产，AUTO_SETTLE 已执行。输入 JSON 含结算后资金状态、"
-                "玩家快照与动作候选项。"
-            ),
-            change_note="他方地产模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="PROPERTY_OTHER_TEMPLATE",
-            version="1.1.0",
-            objective="描述他方地产格事实信息（结构优化版）。",
-            risk_notice="返回 JSON 必须可被严格 schema 校验通过。",
-            body=(
-                "该回合场景为 PROPERTY_OTHER。输入 JSON 已给出全部业务事实与动作边界，"
-                "模型无需扩展业务规则。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "BANK_TEMPLATE": [
-        TemplateVersion(
-            key="BANK_TEMPLATE",
-            version="1.0.0",
-            objective="描述银行格事实信息。",
-            risk_notice="若动作含 amount，值必须命中 allowed_values.amount。",
-            body=(
-                "当前落点为 BANK。输入 JSON 包含现金、存款、动作候选项与参数范围。"
-                "可选动作可能含 bank_deposit、bank_withdraw、pass。"
-            ),
-            change_note="银行模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="BANK_TEMPLATE",
-            version="1.1.0",
-            objective="描述银行格事实信息（字段排序优化版）。",
-            risk_notice="只能在合同字段内输出，不得附加解释字段。",
-            body=(
-                "BANK 场景下，输入 JSON 已给定资金状态、参数上下界与动作候选。"
-                "模型仅输出一个合法动作。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "EVENT_TEMPLATE": [
-        TemplateVersion(
-            key="EVENT_TEMPLATE",
-            version="1.0.0",
-            objective="描述事件格事实信息。",
-            risk_notice="输出字段必须完全匹配 output_contract。",
-            body=(
-                "当前落点为 EVENT，事件结算已进入状态。输入 JSON 含事件后资金变化、"
-                "玩家快照与本轮候选动作。"
-            ),
-            change_note="事件模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="EVENT_TEMPLATE",
-            version="1.1.0",
-            objective="描述事件格事实信息（结构优化版）。",
-            risk_notice="禁止输出合同外字段与非法动作。",
-            body=(
-                "该回合为 EVENT 场景。输入 JSON 已给出全部状态事实，"
-                "模型仅需返回合法动作 JSON。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
-    "EMPTY_TEMPLATE": [
-        TemplateVersion(
-            key="EMPTY_TEMPLATE",
-            version="1.0.0",
-            objective="描述空格场景事实信息。",
-            risk_notice="动作必须来自 options，参数必须合法。",
-            body=(
-                "当前落点为 EMPTY。输入 JSON 含玩家状态、全局快照、候选动作与参数边界。"
-            ),
-            change_note="空格模板初版。",
-            updated_on="2026-04-18",
-        ),
-        TemplateVersion(
-            key="EMPTY_TEMPLATE",
-            version="1.1.0",
-            objective="描述空格场景事实信息（精简版）。",
-            risk_notice="仅返回合同字段，不返回附加说明字段。",
-            body=(
-                "该场景无强制结算逻辑。输入 JSON 提供本轮全部事实信息与动作候选。"
-                "模型只输出单一合法动作。"
-            ),
-            change_note="改为纯现状描述，不含策略指引。",
-            updated_on="2026-04-18",
-        ),
-    ],
+    "PROPERTY_UNOWNED_TEMPLATE": _two_versions("PROPERTY_UNOWNED_TEMPLATE", "2026-04-18"),
+    "PROPERTY_SELF_TEMPLATE": _two_versions("PROPERTY_SELF_TEMPLATE", "2026-04-18"),
+    "PROPERTY_ALLY_TEMPLATE": _two_versions("PROPERTY_ALLY_TEMPLATE", "2026-04-18"),
+    "PROPERTY_OTHER_TEMPLATE": _two_versions("PROPERTY_OTHER_TEMPLATE", "2026-04-18"),
+    "BANK_TEMPLATE": _two_versions("BANK_TEMPLATE", "2026-04-18"),
+    "EVENT_TEMPLATE": _two_versions("EVENT_TEMPLATE", "2026-04-18"),
+    "EMPTY_TEMPLATE": _two_versions("EMPTY_TEMPLATE", "2026-04-18"),
     "QUIZ_TEMPLATE": [
         TemplateVersion(
             key="QUIZ_TEMPLATE",
             version="0.1.0",
-            objective="描述 QUIZ 占位场景事实信息。",
-            risk_notice="MVP 阶段 QUIZ 仍为占位链路，输出必须合同合法。",
-            body=(
-                "当前场景标记为 QUIZ，占位逻辑已保留。输入 JSON 含候选动作与参数范围。"
-            ),
-            change_note="新增 QUIZ 占位模板。",
+            objective=COMMON_OBJECTIVE,
+            risk_notice=COMMON_RISK_NOTICE,
+            body=COMMON_BODY,
+            change_note="QUIZ 占位模板。",
             updated_on="2026-04-18",
-        )
+        ),
+        TemplateVersion(
+            key="QUIZ_TEMPLATE",
+            version="0.2.0",
+            objective=COMMON_OBJECTIVE,
+            risk_notice=COMMON_RISK_NOTICE,
+            body=COMMON_BODY,
+            change_note="统一为状态模板，格子差异仅体现在动作与参数。",
+            updated_on="2026-04-18",
+        ),
     ],
 }
 

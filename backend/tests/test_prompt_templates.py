@@ -6,7 +6,7 @@ from pathlib import Path
 
 from app.agent_eval import compare_template_versions, report_markdown
 from app.prompts.router import ABRule, PromptABRouter
-from app.prompts.templates import get_template_changelog, list_template_keys, list_template_versions
+from app.prompts.templates import get_template, get_template_changelog, list_template_keys, list_template_versions
 
 
 class PromptTemplateTests(unittest.TestCase):
@@ -30,6 +30,24 @@ class PromptTemplateTests(unittest.TestCase):
         changelog = get_template_changelog()
         bank_rows = [item for item in changelog if item["template_key"] == "BANK_TEMPLATE"]
         self.assertGreaterEqual(len(bank_rows), 2)
+
+    def test_templates_share_the_same_context_description(self) -> None:
+        keys = [
+            "PROPERTY_UNOWNED_TEMPLATE",
+            "PROPERTY_SELF_TEMPLATE",
+            "PROPERTY_ALLY_TEMPLATE",
+            "PROPERTY_OTHER_TEMPLATE",
+            "BANK_TEMPLATE",
+            "EVENT_TEMPLATE",
+            "EMPTY_TEMPLATE",
+            "QUIZ_TEMPLATE",
+        ]
+        baseline = get_template(keys[0])
+        for key in keys[1:]:
+            current = get_template(key)
+            self.assertEqual(current.objective, baseline.objective)
+            self.assertEqual(current.risk_notice, baseline.risk_notice)
+            self.assertEqual(current.body, baseline.body)
 
     def test_ab_router_is_deterministic(self) -> None:
         router = PromptABRouter(

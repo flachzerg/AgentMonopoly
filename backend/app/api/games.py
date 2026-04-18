@@ -66,6 +66,16 @@ def _build_turn_input(game_id: str):
             tiles=manager.build_board_snapshot(session),
         ),
         options=session.allowed_actions,
+        history_records=[
+            {
+                "event_id": item.event_id,
+                "type": item.type,
+                "round_index": item.round_index,
+                "turn_index": item.turn_index,
+                "payload": item.payload,
+            }
+            for item in session.events[-20:]
+        ],
     )
     return runtime.build_turn_input(payload)
 

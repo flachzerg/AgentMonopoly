@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 import httpx
@@ -113,15 +113,10 @@ class HeuristicDecisionModel:
         self.model_tag = model_tag
 
     def generate(self, prompt: str, output_contract: OutputContract, timeout_sec: float) -> str:
-        template_version = "1.0.0"
-        for line in prompt.splitlines():
-            if line.startswith("version: "):
-                template_version = line.split(":", 1)[1].strip()
-                break
+        payload = extract_turn_input(prompt)
+        template_version = str(payload.get("template_version", "1.0.0"))
         aggressive = template_version.endswith("1.1.0")
 
-        input_json = prompt.split("## Turn Input JSON\n", 1)[-1].strip()
-        payload = json.loads(input_json)
         options = payload.get("options", [])
         player = payload.get("player_state", {})
         tile_context = payload.get("tile_context", {})
@@ -178,6 +173,7 @@ class TurnBuildInput:
     players_snapshot: list[PlayerSnapshot]
     board_snapshot: BoardSnapshot
     options: list[ActionOption]
+    history_records: list[dict[str, Any]] = field(default_factory=list)
 
 
 class AgentRuntime:
@@ -208,6 +204,7 @@ class AgentRuntime:
             player_state=payload.player_state,
             players_snapshot=payload.players_snapshot,
             board_snapshot=payload.board_snapshot,
+            history_records=payload.history_records,
             options=payload.options,
             output_contract=OutputContract(),
             template_key=template.key,
@@ -410,3 +407,16 @@ def estimate_tokens(text: str) -> int:
 def decide_fallback(allowed_actions: list[str]) -> AgentTurnOutput:
     options = [ActionOption(action=item, description=item) for item in allowed_actions]
     return fallback_decision(options)
+
+
+def extract_turn_input(prompt: str) -> dict[str, Any]:
+    markers = ["## Turn Input JSON", "## 回合输入 JSON"]
+    for marker in markers:
+        token = f"{marker}\n"
+        if token in prompt:
+            input_json = prompt.split(token, 1)[-1].strip()
+            data = json.loads(input_json)
+            if isinstance(data, dict):
+                return data
+            break
+    raise OutputParseError("turn input json block not found in prompt")
