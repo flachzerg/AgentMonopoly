@@ -1,10 +1,10 @@
 {
   "provider": "openai-compatible",
   "base_url": "https://api.deepseek.com",
-  "api_key": "YOUR_API_KEY",
-  "default_timeout_sec": 8,
-  "default_max_retries": 2,
-  "models_checked_at": "2026-04-18",
+  "api_key": "sk-934edd7c65574d5d939a396925740ae1",
+  "default_timeout_sec": 20,
+  "default_max_retries": 1,
+  "models_checked_at": "2026-04-19",
   "default_model": "deepseek/deepseek-v3.2",
   "actual_model": "deepseek-chat",
   "model_options": [

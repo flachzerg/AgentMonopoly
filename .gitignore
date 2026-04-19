@@ -14,7 +14,6 @@ backend/.env
 frontend/.env
 backend/config/*.local.json
 backend/config/deepseek_agent_config.json
-backend/config/openrouter_agent_config.local.json
 
 # Python cache / tooling
 .pytest_cache/
@@ -32,4 +31,3 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
-

@@ -245,7 +245,7 @@ class AgentDecisionEnvelope(StrictModel):
 class AgentConfig(StrictModel):
     provider: str = "openai-compatible"
     model: str = DEFAULT_AGENT_MODEL
-    base_url: str = "https://openrouter.ai/api/v1"
+    base_url: str = "https://api.deepseek.com"
     api_key: str = ""
     timeout_sec: float = Field(default=8, gt=0.5, le=60)
     max_retries: int = Field(default=2, ge=0, le=5)

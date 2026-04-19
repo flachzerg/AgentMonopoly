@@ -2,10 +2,12 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import re
+import os
 from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import PlainTextResponse
 
 from app.agent_runtime import AgentRuntime, RuntimeConfig, TurnBuildInput
@@ -49,6 +51,18 @@ class AutoAdvanceResult:
     steps: int
     stopped_reason: str
     audits: list[dict[str, Any]]
+
+def _assert_llm_ready() -> None:
+    if "PYTEST_CURRENT_TEST" in os.environ or os.getenv("APP_ENV", "") == "test":
+        return
+    if _agent_options.provider == "openai-compatible" and not _agent_options.api_key.strip():
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "missing_api_key",
+                "message": "缺少模型 API Key，请在 backend/config/agent_options.placeholder.json 填入自己的 key。",
+            },
+        )
 
 
 def _map_assets_catalog() -> tuple[list[str], str]:
@@ -139,6 +153,7 @@ def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
     default_cfg = RuntimeConfig(
         model_provider=_agent_options.provider,
         model_name=default_model_name(_agent_options),
+        actual_model_name=_agent_options.actual_model,
         model_base_url=_agent_options.base_url,
         model_api_key=_agent_options.api_key,
         timeout_sec=_agent_options.default_timeout_sec,
@@ -147,7 +162,9 @@ def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
     if default_cfg.model_provider == "openai-compatible" and not default_cfg.model_api_key:
         default_cfg = RuntimeConfig(
             model_provider="heuristic",
-            model_name="heuristic",
+            # 没有 key 时走启发式，但仍保留“展示模型”以便前端头像/回放一致。
+            model_name=default_cfg.model_name,
+            actual_model_name=default_cfg.actual_model_name,
             model_base_url=default_cfg.model_base_url,
             model_api_key="",
             timeout_sec=default_cfg.timeout_sec,
@@ -156,18 +173,22 @@ def _resolve_runtime_config(game_id: str, player_id: str) -> RuntimeConfig:
     if not cfg:
         return default_cfg
 
+    # 产品 demo 逻辑：前端允许选择不同“展示模型”，但真实请求永远走 DeepSeek。
+    # 因此：model_name 仍使用玩家选择（便于前端显示/头像/回放），但 base_url/api_key/provider/actual_model_name 固定。
     runtime_cfg = RuntimeConfig(
-        model_provider=cfg.provider or default_cfg.model_provider,
+        model_provider=default_cfg.model_provider,
         model_name=cfg.model or default_cfg.model_name,
-        model_base_url=cfg.base_url or default_cfg.model_base_url,
-        model_api_key=cfg.api_key or default_cfg.model_api_key,
+        actual_model_name=default_cfg.actual_model_name,
+        model_base_url=default_cfg.model_base_url,
+        model_api_key=default_cfg.model_api_key,
         timeout_sec=cfg.timeout_sec or default_cfg.timeout_sec,
         max_retries=cfg.max_retries,
     )
     if runtime_cfg.model_provider == "openai-compatible" and not runtime_cfg.model_api_key:
         runtime_cfg = RuntimeConfig(
             model_provider="heuristic",
-            model_name="heuristic",
+            model_name=runtime_cfg.model_name,
+            actual_model_name=runtime_cfg.actual_model_name,
             model_base_url=runtime_cfg.model_base_url,
             model_api_key="",
             timeout_sec=runtime_cfg.timeout_sec,
@@ -383,7 +404,8 @@ async def _run_model_decision_once(game_id: str, player_id: str, allow_hidden_hu
     turn_input = _build_turn_input_v2(game_id, runtime)
     context_packet = _serialize_agent_context(turn_input)
     _latest_agent_context[game_id] = context_packet
-    envelope = runtime.decide(turn_input)
+    # 模型请求是阻塞 I/O（httpx.Client），放到线程池避免卡住事件循环导致 WS 掉线。
+    envelope = await run_in_threadpool(runtime.decide, turn_input)
     session = _manager.get_game(game_id)
     player = next((item for item in session.players if item.player_id == player_id), None)
     player_name = player.name if player else player_id
@@ -459,6 +481,7 @@ async def _auto_advance_until_human(game_id: str, max_steps: int = 120) -> AutoA
 
 @router.post("", response_model=dict)
 async def create_game_v2(payload: CreateGameRequest) -> dict[str, Any]:
+    _assert_llm_ready()
     if not payload.players:
         raise HTTPException(status_code=400, detail="players is required")
     game_id = payload.game_id.strip()
@@ -529,6 +552,7 @@ async def submit_action_v2(game_id: str, payload: ActionRequest) -> ActionRespon
 
 @router.post("/{game_id}/agent/{player_id}/act", response_model=ActionResponse)
 async def agent_act_v2(game_id: str, player_id: str) -> ActionResponse:
+    _assert_llm_ready()
     if not _manager.has_game(game_id):
         raise HTTPException(status_code=404, detail="unknown game")
     _, _, response = await _run_model_decision_once(game_id, player_id, allow_hidden_human_actions=False)
@@ -660,5 +684,7 @@ def get_agent_options() -> dict[str, Any]:
         "base_url": _agent_options.base_url,
         "models_checked_at": _agent_options.models_checked_at,
         "default_model": _agent_options.default_model,
+        "actual_model": _agent_options.actual_model,
+        "has_api_key": bool(_agent_options.api_key.strip()),
         "model_options": _agent_options.model_options,
     }

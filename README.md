@@ -10,7 +10,7 @@
   - 对局页：上方全局状态、左侧地图、右侧日志与 Agent 流式输出、底部动作区
   - 复盘页：对局日志回放、摘要生成、导出复盘
 - 后端单轨 `v2` 架构（legacy 路径已移除）
-- AI Provider 已默认接到 OpenRouter（后端读取本地配置文件）
+- AI Provider 固定为 DeepSeek（后端读取配置文件）
 - 前端无需展示 API Key / base URL，用户仅需选择模型
 - 支持 AI 单步决策与自动推进
 - 已支持 Agent `thought` 伪流式输出（方式 A）：模型先返回完整 JSON，再通过 WebSocket 分片广播 `agent.thought.delta / agent.thought.done`
@@ -27,7 +27,7 @@
 
 - Frontend: React + TypeScript + Vite + Zustand + React Router
 - Backend: FastAPI + Pydantic + WebSocket
-- AI Runtime: openai-compatible 接口（默认 OpenRouter）
+- AI Runtime: DeepSeek 的 openai-compatible 接口（固定 DeepSeek）
 
 ## 目录结构
 
@@ -86,38 +86,44 @@ npm install
 cd ..
 ```
 
-### 5) Agent 配置模板与本地配置
+### 5) Agent 配置（占位符）
 
 > 前端页面不录入 API Key；密钥与 base_url 由后端配置文件读取。
+
+#### DeepSeek（推荐）
+
+项目默认做成“前端可选不同厂商型号用于展示与头像，但后端真实请求固定走 DeepSeek”，更适配国内网络，也更省钱。
+
+请直接编辑占位符文件并填入自己的 key：
+
+- `backend/config/agent_options.placeholder.json`
+- 字段：`api_key`
+
+如果 `api_key` 为空，前端会弹窗提示，并且禁止开始对局。
 
 ```bash
 cd backend
 cp config/agent_options.template.json config/agent_options.local.json
 # 可选：准备多份本地私有配置用于切换
-cp config/agent_options.template.json config/agent_options.openrouter.local.json
 cp config/agent_options.template.json config/agent_options.deepseek.local.json
 cd ..
 ```
 
-默认模板文件：`backend/config/agent_options.template.json`（可提交到 GitHub）  
-本地文件：`backend/config/*.local.json`（已 `.gitignore`）
+默认占位符文件：`backend/config/agent_options.placeholder.json`（可提交到 GitHub）  
+模板参考：`backend/config/agent_options.template.json`
 
-### 6) Provider 切换（相对路径，跨电脑可用）
+### 6) 配置文件选择（相对路径，跨电脑可用）
 
 项目通过 `AGENT_OPTIONS_FILE` 指定后端读取的配置文件。  
 未显式指定时，默认优先级：
 
 1. `backend/config/agent_options.local.json`
 2. `backend/config/deepseek_agent_config.json`（兼容历史命名）
-3. `backend/config/openrouter_agent_config.local.json`（兼容历史命名）
-4. `backend/config/agent_options.template.json`
+3. `backend/config/agent_options.placeholder.json`
 
 Windows（PowerShell）：
 
 ```powershell
-# OpenRouter
-$env:AGENT_OPTIONS_FILE = "backend/config/agent_options.openrouter.local.json"
-
 # DeepSeek
 $env:AGENT_OPTIONS_FILE = "backend/config/agent_options.deepseek.local.json"
 ```
@@ -125,7 +131,7 @@ $env:AGENT_OPTIONS_FILE = "backend/config/agent_options.deepseek.local.json"
 bash/zsh：
 
 ```bash
-export AGENT_OPTIONS_FILE=backend/config/agent_options.openrouter.local.json
+export AGENT_OPTIONS_FILE=backend/config/agent_options.placeholder.json
 ```
 
 ## 启动与自检
@@ -139,7 +145,7 @@ export AGENT_OPTIONS_FILE=backend/config/agent_options.openrouter.local.json
 bash scripts/dev_restart.sh restart
 
 # 手动指定配置文件
-AGENT_OPTIONS_FILE=backend/config/agent_options.openrouter.local.json bash scripts/dev_restart.sh restart
+AGENT_OPTIONS_FILE=backend/config/agent_options.placeholder.json bash scripts/dev_restart.sh restart
 ```
 
 ```powershell
@@ -176,7 +182,7 @@ npx vite --host 0.0.0.0 --port 5173
 
 ### 4) 自检
 
-- 后端健康检查：[http://localhost:8000/health](http://localhost:8000/health)
+- 后端健康检查：[http://localhost:8000/](http://localhost:8000/)
 - 地图选项接口：[http://localhost:8000/games/map-options](http://localhost:8000/games/map-options)
 - 当前 Agent 配置：[http://localhost:8000/games/agent-options](http://localhost:8000/games/agent-options)
 - 前端页面：[http://localhost:5173](http://localhost:5173)
@@ -265,7 +271,7 @@ A:
 A:
 
 - 确认 `backend/config/agent_options.local.json`（或你指定的本地配置）内 `api_key` 有效
-- 确认 `base_url` 为 `https://openrouter.ai/api/v1`
+- 确认 `base_url` 为 `https://api.deepseek.com`
 - 若你在切换 Provider，确认 `AGENT_OPTIONS_FILE` 指向了期望的配置文件
 - 查看后端日志是否出现模型调用超时或鉴权失败
 

@@ -6,12 +6,12 @@ RUN_DIR="$ROOT_DIR/.run"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 FRONTEND_EXTRA_PORTS="${FRONTEND_EXTRA_PORTS:-5174 5175}"
+BACKEND_RELOAD="${BACKEND_RELOAD:-0}"
 BACKEND_LOG="$RUN_DIR/backend.log"
 FRONTEND_LOG="$RUN_DIR/frontend.log"
 DEFAULT_AGENT_OPTIONS_FILE_REL="backend/config/agent_options.local.json"
 DEEPSEEK_OPTIONS_FILE_REL="backend/config/deepseek_agent_config.json"
-OPENROUTER_LOCAL_OPTIONS_FILE_REL="backend/config/openrouter_agent_config.local.json"
-AGENT_OPTIONS_TEMPLATE_FILE_REL="backend/config/agent_options.template.json"
+AGENT_OPTIONS_TEMPLATE_FILE_REL="backend/config/agent_options.placeholder.json"
 BACKEND_PID_FILE="$RUN_DIR/backend.pid"
 FRONTEND_PID_FILE="$RUN_DIR/frontend.pid"
 
@@ -28,10 +28,6 @@ resolve_agent_options_file() {
   fi
   if [[ -f "$ROOT_DIR/$DEEPSEEK_OPTIONS_FILE_REL" ]]; then
     echo "$DEEPSEEK_OPTIONS_FILE_REL"
-    return 0
-  fi
-  if [[ -f "$ROOT_DIR/$OPENROUTER_LOCAL_OPTIONS_FILE_REL" ]]; then
-    echo "$OPENROUTER_LOCAL_OPTIONS_FILE_REL"
     return 0
   fi
   echo "$AGENT_OPTIONS_TEMPLATE_FILE_REL"
@@ -110,14 +106,18 @@ resolve_python() {
 start_backend() {
   local py
   local agent_options_file
+  local reload_flag=""
   py="$(resolve_python)"
   agent_options_file="$(resolve_agent_options_file)"
+  if [[ "$BACKEND_RELOAD" == "1" ]]; then
+    reload_flag="--reload"
+  fi
   echo "Starting backend on :$BACKEND_PORT"
   echo "Using AGENT_OPTIONS_FILE=$agent_options_file"
   (
     cd "$ROOT_DIR/backend"
     AGENT_OPTIONS_FILE="$agent_options_file" \
-      nohup "$py" -m uvicorn app.main:app --host 0.0.0.0 --port "$BACKEND_PORT" --reload >"$BACKEND_LOG" 2>&1 &
+      nohup "$py" -m uvicorn app.main:app --host 0.0.0.0 --port "$BACKEND_PORT" $reload_flag >"$BACKEND_LOG" 2>&1 </dev/null &
     echo $! >"$BACKEND_PID_FILE"
   )
 }
@@ -126,7 +126,7 @@ start_frontend() {
   echo "Starting frontend on :$FRONTEND_PORT"
   (
     cd "$ROOT_DIR/frontend"
-    nohup npx vite --host 0.0.0.0 --port "$FRONTEND_PORT" >"$FRONTEND_LOG" 2>&1 &
+    nohup npm run dev -- --host 0.0.0.0 --port "$FRONTEND_PORT" >"$FRONTEND_LOG" 2>&1 </dev/null &
     echo $! >"$FRONTEND_PID_FILE"
   )
 }

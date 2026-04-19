@@ -51,8 +51,11 @@ class DecisionModel(Protocol):
 
 
 class RuntimeConfig(BaseModel):
+    # model_name：用于展示/审计（比如前端选择的“Claude / GPT / Gemini ...”）
+    # actual_model_name：用于真实请求（这里会固定为 DeepSeek）
     model_provider: str = Field(default=os.getenv("MODEL_PROVIDER", "heuristic"))
     model_name: str = Field(default=os.getenv("MODEL_NAME", "gpt-4o-mini"))
+    actual_model_name: str = Field(default=os.getenv("ACTUAL_MODEL_NAME", ""))
     model_base_url: str = Field(default=os.getenv("MODEL_BASE_URL", "https://api.openai.com/v1"))
     model_api_key: str = Field(default=os.getenv("MODEL_API_KEY", ""))
     timeout_sec: float = Field(default=float(os.getenv("MODEL_TIMEOUT_SEC", "8")), gt=0.5, le=60)
@@ -60,8 +63,9 @@ class RuntimeConfig(BaseModel):
 
 
 class OpenAICompatibleDecisionModel:
-    def __init__(self, model_name: str, model_base_url: str, model_api_key: str) -> None:
+    def __init__(self, model_name: str, model_base_url: str, model_api_key: str, actual_model_name: str = "") -> None:
         self._model_name = model_name
+        self._actual_model_name = actual_model_name.strip()
         self._model_base_url = model_base_url.rstrip("/")
         self._model_api_key = model_api_key
         self.model_tag = f"openai-compatible:{model_name}"
@@ -75,7 +79,7 @@ class OpenAICompatibleDecisionModel:
             "Content-Type": "application/json",
         }
         payload = {
-            "model": self._model_name,
+            "model": self._actual_model_name or self._model_name,
             "messages": [
                 {
                     "role": "system",
@@ -339,6 +343,7 @@ class AgentRuntime:
                 model_name=self.config.model_name,
                 model_base_url=self.config.model_base_url,
                 model_api_key=self.config.model_api_key,
+                actual_model_name=self.config.actual_model_name,
             )
         return HeuristicDecisionModel(model_tag=f"{self.config.model_provider}:{self.config.model_name}")
 

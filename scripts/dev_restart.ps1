@@ -19,14 +19,13 @@ $FrontendPidFile = Join-Path $RunDir "frontend.pid"
 
 $DefaultAgentOptionsRel = "backend/config/agent_options.local.json"
 $DeepseekOptionsRel = "backend/config/deepseek_agent_config.json"
-$OpenrouterOptionsRel = "backend/config/openrouter_agent_config.local.json"
-$TemplateOptionsRel = "backend/config/agent_options.template.json"
+$TemplateOptionsRel = "backend/config/agent_options.placeholder.json"
 
 New-Item -ItemType Directory -Force -Path $RunDir | Out-Null
 
 function Resolve-AgentOptionsFile {
   if ($env:AGENT_OPTIONS_FILE) { return $env:AGENT_OPTIONS_FILE }
-  $candidates = @($DefaultAgentOptionsRel, $DeepseekOptionsRel, $OpenrouterOptionsRel, $TemplateOptionsRel)
+  $candidates = @($DefaultAgentOptionsRel, $DeepseekOptionsRel, $TemplateOptionsRel)
   foreach ($candidate in $candidates) {
     if (Test-Path (Join-Path $RootDir $candidate)) { return $candidate }
   }

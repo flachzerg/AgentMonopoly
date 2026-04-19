@@ -194,6 +194,8 @@ export type AgentOptions = {
   base_url: string;
   models_checked_at: string;
   default_model?: string;
+  actual_model?: string;
+  has_api_key?: boolean;
   model_options: string[];
 };
 

@@ -48,6 +48,7 @@ export default function SetupPage() {
   const [agentOptions, setAgentOptions] = useState<AgentOptions | null>(null);
   const [players, setPlayers] = useState<PlayerDraft[]>([]);
   const [showIntroModal, setShowIntroModal] = useState(true);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
 
   const models = useMemo(() => {
     if (agentOptions && agentOptions.model_options.length > 0) {
@@ -72,6 +73,9 @@ export default function SetupPage() {
         const [agentOpts, mapOpts] = await Promise.all([gamesApi.getAgentOptions(), gamesApi.getMapOptions()]);
         setAgentOptions(agentOpts);
         setMapOptions(mapOpts);
+        if (agentOpts.provider === "openai-compatible" && agentOpts.has_api_key === false) {
+          setShowApiKeyModal(true);
+        }
         const defaultAsset = mapOpts.default_map_asset || "default";
         const storedAsset = localStorage.getItem("am-map-theme") || "";
         const preferredAsset = (storedAsset && mapOpts.map_assets.includes(storedAsset) ? storedAsset : defaultAsset).trim();
@@ -138,6 +142,11 @@ export default function SetupPage() {
   };
 
   const onStartGame = async () => {
+    if (agentOptions?.provider === "openai-compatible" && agentOptions.has_api_key === false) {
+      setFormError("缺少模型 API Key：请先在 backend/config/agent_options.placeholder.json 填入自己的 key，然后重启后端。");
+      setShowApiKeyModal(true);
+      return;
+    }
     const normalizedName = roomName.trim();
     if (normalizedName.length < 2) {
       setFormError("房间名称至少需要 2 个字符。");
@@ -245,6 +254,39 @@ export default function SetupPage() {
               <div>
                 <strong>03</strong>
                 <span>进入对局后观察决策、事件与收益变化，结束后查看复盘。</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {showApiKeyModal ? (
+        <div className="setup-intro-backdrop" role="dialog" aria-modal="true" aria-labelledby="setup-apikey-title">
+          <section className="setup-intro-modal">
+            <button
+              className="setup-intro-close"
+              type="button"
+              aria-label="关闭 API Key 弹窗"
+              onClick={() => setShowApiKeyModal(false)}
+            >
+              ×
+            </button>
+            <div className="setup-intro-kicker">DEEPSEEK KEY REQUIRED</div>
+            <h2 id="setup-apikey-title">需要先填入 DeepSeek 密钥</h2>
+            <p className="setup-intro-lead">
+              当前仓库采用“前端可选不同厂商型号用于展示与头像，但后端真实调用固定走 DeepSeek”。为了让对局能真实调用模型，请先把你的 key 写到占位符配置文件里。
+            </p>
+            <div className="setup-intro-routes">
+              <div>
+                <strong>01</strong>
+                <span>打开 `backend/config/agent_options.placeholder.json`</span>
+              </div>
+              <div>
+                <strong>02</strong>
+                <span>把 `api_key` 填成你的 DeepSeek key（例如 `sk-...`）</span>
+              </div>
+              <div>
+                <strong>03</strong>
+                <span>重启后端（`bash scripts/dev_restart.sh restart`）再开始对局</span>
               </div>
             </div>
           </section>
